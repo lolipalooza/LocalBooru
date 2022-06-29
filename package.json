@@ -1,0 +1,14 @@
+{
+  "name": "localbooru",
+  "version": "1.0.0",
+  "description": "A booru like app to store custom settings in your own PC",
+  "main": "index.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^19.0.6"
+  }
+}
