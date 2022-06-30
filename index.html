@@ -46,7 +46,10 @@
       align-items: center;
       justify-content: center;
     }
-    .gallery > div > img, .gallery > div > video {
+    .card__image {
+      width: 100%;
+    }
+    .gallery > div > img, .gallery > div > video, .card__image img {
       max-width: 175px;
       max-height: 175px;
     }
@@ -93,7 +96,7 @@
         padding: 10px;
         box-sizing: border-box;
       }
-      .gallery > div > img, .gallery > div > video {
+      .gallery > div > img, .gallery > div > video, .card__image img {
         width: 100%;
         object-fit: contain;
         /*height: 175px;*/
@@ -230,6 +233,19 @@
       </div>
     </div>
     <div class="gallery">
+      <div class="card animate-box">
+                        <div class="card__image">
+                            <img class="card__img" src="https://image.freepik.com/free-vector/ramadan-kareem-greeting-card-with-3d-realistic-symbols-of-arab-islamic-holidays_87521-3035.jpg" alt="">
+                        </div>
+                        <div class="card__content">
+                            <div class="card-icons">
+                                <a href="#" class="card__add">Learn more</a>
+                                <i class="fas fa-download"></i>
+                                <i class="fas fa-expand"></i>
+                                <i class="fas fa-ellipsis-v"></i>
+                            </div>
+                        </div>
+                    </div>
       <div class="animate-box"><img src="sample/0b05727de01dd48242a0e6106e386763.jpg"></div>
       <div class="animate-box"><img src="sample/0de8a8d0e6a43cf66a3c6fcf6f2bbf6c.png"></div>
       <div class="animate-box"><img src="sample/2d3a407b909ec342744a28454d9d47b9.jpg"></div>
@@ -272,7 +288,6 @@
           $($('.animate-box')[next++]).addClass('fadeInUp animated')
         }
       }, 50);
-      $('.animate-box').each(function(){})
     })
   </script>
 </body>
