@@ -16,16 +16,35 @@
       background: url(https://static.vecteezy.com/system/resources/previews/001/409/192/original/abstract-geometric-banner-free-vector.jpg) fixed;
       box-shadow: inset 0 0 0 1000px rgba(113, 25, 50, 0.65);
       margin: 0;
-      padding: 8px;
+      padding: 0;
       color: #fff;
+      overflow: hidden;
+    }
+    ._menu {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      height: 24px;
+      background: #2f3640;
+      -webkit-user-select: none;
+      -webkit-app-region: drag;
+    }
+    ._menu .no-drag {
+      -webkit-app-region: no-drag;
     }
     .header {
-
+      position: fixed;
+      top: 30px;
+      width: calc(100% - 12px * 2);
+      z-index: 1;
+      padding: 0px 12px;
     }
     .content {
       display: flex;
+      padding: 45px 0;
     }
     .side {
+      padding-left: 12px;
       flex-basis: 12rem;
       flex-grow: 0;
       flex-shrink: 0;
@@ -41,6 +60,9 @@
     .gallery {
       display: flex;
       flex-wrap: wrap;
+      height: calc(100vh - 65px);
+      overflow: auto;
+      margin-top: 20px;
     }
     .gallery > div {
       display: flex;
@@ -84,9 +106,6 @@
         padding: 0 6px;
     }
     @media (max-width: 850px) {
-      body {
-        padding: 8px 0;
-      }
       .content {
         flex-direction: column-reverse;
       }
@@ -190,13 +209,16 @@
     .card__image::before {
       content: '';
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: -200px;
+      left: -200px;
+      width: 500%;
+      height: 500%;
       z-index: 1;
       background: #12c2e9;
       background: -webkit-linear-gradient(to bottom, #f64f59, #c471ed, #12c2e9);
+      background: -moz-linear-gradient(to bottom, #f64f59, #c471ed, #12c2e9);
+      background: -ms-linear-gradient(to bottom, #f64f59, #c471ed, #12c2e9);
+      background: -o-linear-gradient(to bottom, #f64f59, #c471ed, #12c2e9);
       background: linear-gradient(to bottom, #f64f59, #c471ed, #12c2e9);
       mix-blend-mode: multiply;
       transition: all 0.5s ease;
@@ -211,6 +233,7 @@
   </style>
 </head>
 <body>
+  <section class="_menu"></section>
   <section class="header">
     <div class="searchBox">
           <input class="searchInput"type="text" name="" placeholder="Search">
@@ -293,6 +316,7 @@
       <!-- -->
     </div>
   </section>
+  <script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
   <script
         src="https://code.jquery.com/jquery-3.6.0.min.js"
         integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
@@ -304,49 +328,47 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2" crossorigin="anonymous"></script>
   <script type="text/javascript" src="spotlight.bundle.js"></script>
   <script type="text/javascript">
-    var images = [
-      { src: 'sample/0b05727de01dd48242a0e6106e386763.jpg' },
-      { src: 'sample/0de8a8d0e6a43cf66a3c6fcf6f2bbf6c.png' },
-      { src: 'sample/2d3a407b909ec342744a28454d9d47b9.jpg' },
-      { src: 'sample/6be3af30217590ca9fb37e52b2a60f16.jpg' },
-      { src: 'sample/6eeba0d52324de892bc93ac5264feb2e.png' },
-      { src: 'sample/7a77d6d1df2beac356d4e63842cd08c0.jpg' },
-      { src: 'sample/7d787ef280f8e69849c1276a115e35c2.jpg' },
-      { src: 'sample/7f879fad96d69383d1d83b0e5fc9fed4.png' },
-      { src: 'sample/8bc221427b1251a38df87a8e386da890.png' },
-      { src: 'sample/8ddc7f143081192d8d2115133da3464a.jpg' },
-      { src: 'sample/24d46cdc3b3a27a674a26f13feb7da07.png' },
-      { src: 'sample/77ddab9ced6a24f00be80677e2502048.png' },
-      { src: 'sample/211ad554e52cc614706f86793f29a63c.png' },
-      { src: 'sample/2818f8eb066be00c375959aa4a04c23f.jpg' },
-      { src: 'sample/6558ba702450ba32630bf10bbf537983.jpeg' },
-      { src: 'sample/432084c097a8605740bd94e20a446e61.gif' },
-      { src: 'sample/146431531095.png' },
-      { src: 'sample/a2e3d7ba7005810b1a7ed9eb494b63f1.jpeg' },
-      { src: 'sample/a72380abb2489640504246e13981f3e4.jpg' },
-      { src: 'sample/c6f8675cd30e012bc6b4f21077ee43d9.png' },
-      { src: 'sample/bf035687f2b264c77be2ae3302e23216.gif' },
-      { src: 'sample/d5fc2bf9c1a7aec43f51f624c89f2564.jpg' },
-      { src: 'sample/d580ebedc53ef391afb6b1c54fbb5af0.png' },
-      { src: 'sample/f3b573923766f2567095bb4c320a821e.jpg' },
-    ]
-    $.each(images, function( index, value ) {
-      $('.gallery').append(`<div class="animate-box">
-        <div class="card__image">
-          <a class="spotlight" href="${value.src}">
-            <img class="card__img" src="${value.src}">
-          </a>
-          <div class="card__content">
-            <div class="card-icons">
-              <i class="fa-solid fa-eye" data-bs-toggle="tooltip" title="Ver"></i>
-              <i class="far fa-heart" data-bs-toggle="tooltip" title="Agregar a favoritos"></i>
-            </div>
-          </div>
-        </div>
-      </div>`)
-    })
-
     $(document).ready(function(){
+      const ipc = require("electron").ipcRenderer;
+      const getDataBtn = document.getElementById("test");
+
+      ipc.send("gallery:require");
+      ipc.once("gallery:view", (e, gallery) => {
+        $.each(gallery, function( index, value ) {
+          $('.gallery').append(`<div class="animate-box">
+            <div class="card__image">
+              <a class="spotlight" href="${value.src}">
+                <img class="card__img" src="${value.src}">
+              </a>
+              <div class="card__content">
+                <div class="card-icons">
+                  <i class="fa-solid fa-eye" data-bs-toggle="tooltip" title="Ver"></i>
+                  <i class="far fa-heart" data-bs-toggle="tooltip" title="Agregar a favoritos"></i>
+                </div>
+              </div>
+            </div>
+          </div>`)
+        })
+
+        $('.fa-eye').on('click', function() {
+          // Spotlight:   https://github.com/nextapps-de/spotlight
+          var clicked_index = $(this).closest('.animate-box').index() + 1
+          Spotlight.show(gallery, {
+            animation: 'fade',
+            page: false,
+            theme: true,
+            play: true,
+            infinite: true,
+            autohide: 1,
+            //title: 'LocalBooru Gallery',
+            spinner: true,
+            download: true,
+            index: clicked_index,
+          })
+        })
+
+        $('[data-bs-toggle=tooltip]').tooltip()
+      })
 
       var next = 0
       myInterval = setInterval(function () {
@@ -356,25 +378,6 @@
           $($('.animate-box')[next++]).addClass('fadeInUp animated')
         }
       }, 50);
-
-      $('[data-bs-toggle=tooltip]').tooltip()
-
-      $('.fa-eye').on('click', function() {
-        // Spotlight:   https://github.com/nextapps-de/spotlight
-        var clicked_index = $(this).closest('.animate-box').index() + 1
-        Spotlight.show(images, {
-          animation: 'fade',
-          page: false,
-          theme: true,
-          play: true,
-          infinite: true,
-          autohide: 1,
-          //title: 'LocalBooru Gallery',
-          spinner: true,
-          download: true,
-          index: clicked_index,
-        })
-      })
     })
   </script>
 </body>
