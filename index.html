@@ -6,6 +6,8 @@
   <title>My App Layout</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
   <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+  
+  <link rel="stylesheet" type="text/css" href="pagination.css">
   <style type="text/css">
     section, div {
       box-sizing: content-box;
@@ -41,7 +43,7 @@
     }
     .content {
       display: flex;
-      padding: 45px 0;
+      padding: 48px 0;
     }
     .side {
       padding-left: 12px;
@@ -60,11 +62,11 @@
     .gallery {
       display: flex;
       flex-wrap: wrap;
-      height: calc(100vh - 65px);
+      height: calc(100vh - 68px);
       overflow: auto;
       margin-top: 20px;
     }
-    .gallery > div {
+    .gallery > div:not(.pgn) {
       display: flex;
       width: 195px;
       height: 185px;
@@ -86,7 +88,7 @@
     }
     .searchBox {
       background: #2f3640;
-      height: 12px;
+      height: 15px;
       border-radius: 40px;
       padding: 8px;
       border: 1px solid #fff;
@@ -102,17 +104,38 @@
       font-size: 12px;
       transition: 0.4s;
       line-height: 12px;
-      width: calc(100% - 30px);
+      width: calc(100% - 15px);
         padding: 0 6px;
+    }
+    .pagination-trigger {
+      position: fixed;
+      bottom: 0;
+      width: calc(100% - 221px) !important;
+      height: 45px !important;
+      margin: 0 !important;
+      z-index: 1;
+    }
+    .content_detail__pagination.cdp {
+      margin-top: 0;
+    }
+    .loading {
+      width: 100vw !important;
+      margin: 80px 0 !important;
+      animation: loading-anim 500ms ease both;
     }
     @media (max-width: 850px) {
       .content {
         flex-direction: column-reverse;
       }
-      .gallery > div {
-        width: 32vw;
+      .loading {
+        width: 100vw !important;
+        margin: 80px 0 !important;
+        animation: loading-anim 500ms ease both;
+      }
+      .gallery > div:not(.loading) {
+        width: 32vw !important;
         min-width: unset;
-        margin-top: unset;
+        margin-top: unset !important;
         padding: 10px;
         box-sizing: border-box;
       }
@@ -230,13 +253,23 @@
       transition: all 0.5s ease;
       box-shadow: 10px 20px 40px #000;
     }
+    @keyframes loading-anim {
+      from {
+        transform: scale(1.2);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
   </style>
 </head>
 <body>
   <section class="_menu"></section>
   <section class="header">
     <div class="searchBox">
-          <input class="searchInput"type="text" name="" placeholder="Search">
+          <input class="searchInput" type="text" name="" placeholder="Search">
           <i class="fa-solid fa-magnifying-glass"></i>
       </div>
   </section>
@@ -316,60 +349,155 @@
       <!-- -->
     </div>
   </section>
+
   <script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
+  
   <script
         src="https://code.jquery.com/jquery-3.6.0.min.js"
         integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
         crossorigin="anonymous"></script>
+  
   <script
         src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js"
         integrity="sha256-eTyxS0rkjpLEo16uXTS0uVCS4815lc40K2iVpWDvdSY="
         crossorigin="anonymous"></script>
+  
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2" crossorigin="anonymous"></script>
+  
   <script type="text/javascript" src="spotlight.bundle.js"></script>
+  
   <script type="text/javascript">
     $(document).ready(function(){
-      const ipc = require("electron").ipcRenderer;
-      const getDataBtn = document.getElementById("test");
-
-      ipc.send("gallery:require");
+      const ipc = require("electron").ipcRenderer
+      
+      ipc.send("gallery:require")
       ipc.once("gallery:view", (e, gallery) => {
-        $.each(gallery, function( index, value ) {
-          $('.gallery').append(`<div class="animate-box">
-            <div class="card__image">
-              <a class="spotlight" href="${value.src}">
-                <img class="card__img" src="${value.src}">
-              </a>
-              <div class="card__content">
-                <div class="card-icons">
-                  <i class="fa-solid fa-eye" data-bs-toggle="tooltip" title="Ver"></i>
-                  <i class="far fa-heart" data-bs-toggle="tooltip" title="Agregar a favoritos"></i>
-                </div>
-              </div>
-            </div>
-          </div>`)
+        $('.gallery').html('')
+        var images = []
+        $.each(gallery.post, function( index, value ) {
+          var image = value.sample_url ? value.sample_url : value.file_url
+          images.push({src: image})
+          $('.gallery').append(buildPost(value))
         })
+
+        $('.gallery').append(buildPagination(gallery))
+        paginationFunctions()
 
         $('.fa-eye').on('click', function() {
-          // Spotlight:   https://github.com/nextapps-de/spotlight
-          var clicked_index = $(this).closest('.animate-box').index() + 1
-          Spotlight.show(gallery, {
-            animation: 'fade',
-            page: false,
-            theme: true,
-            play: true,
-            infinite: true,
-            autohide: 1,
-            //title: 'LocalBooru Gallery',
-            spinner: true,
-            download: true,
-            index: clicked_index,
-          })
+          Spotlight.show(images, spotlightConfig($(this)))
         })
-
         $('[data-bs-toggle=tooltip]').tooltip()
+        displayGalleryAnimations()
+        $('.content_detail__pagination a').on('click', {ipc: ipc}, clickOnPaginationButtons)
       })
 
+      $('.searchInput').on("keypress", function(e) {
+        if (e.which==13) {
+          var tags = $(this).val()
+          $('.gallery').html(`<div class="loading">${loading}</div>`)
+
+          ipc.send("gallery:require", null, tags)
+          ipc.once("gallery:view", (e, gallery) => {
+            $('.gallery').html('')
+            var images = []
+            $.each(gallery.post, function( index, value ) {
+              var image = value.sample_url ? value.sample_url : value.file_url
+              images.push({src: image})
+              $('.gallery').append(buildPost(value))
+            })
+
+            $('.gallery').append(buildPagination(gallery))
+            paginationFunctions()
+
+            $('.fa-eye').on('click', function() {
+              Spotlight.show(images, spotlightConfig($(this)))
+            })
+            $('[data-bs-toggle=tooltip]').tooltip()
+            displayGalleryAnimations()
+            $('.content_detail__pagination a').on('click', {ipc: ipc}, clickOnPaginationButtons)
+          })
+        }
+      })
+
+      $('.gallery').html(`<div class="loading">${loading}</div>`)
+    })
+
+function clickOnPaginationButtons(e) {
+  var ipc = e.data.ipc
+  var page = $('.content_detail__pagination').attr('actpage') - 1
+  var href = $(this).attr('href')
+  if (/[-+]1/.test(href)) {
+    page = /-1/.test(href) ? page - 1 : page + 1
+  } else page = href.match(/\d+/)[0]
+  $('.gallery').append(`<div class="loading">${loading}</div>`)
+  $('.animate-box').remove()
+
+  ipc.send("gallery:require", page)
+  ipc.once("gallery:view", (e, gallery) => {
+    $('.loading').remove()
+    var images = []
+    $.each(gallery.post, function( index, value ) {
+      var image = value.sample_url ? value.sample_url : value.file_url
+      images.push({src: image})
+      $('.pagination-trigger').before(buildPost(value))
+    })
+
+    $('.fa-eye').on('click', function() {
+      Spotlight.show(images, spotlightConfig($(this)))
+    })
+    $('[data-bs-toggle=tooltip]').tooltip()
+
+    displayGalleryAnimations()
+  })
+}
+
+const loading = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="margin:auto;display:block;" width="200px" height="200px" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid">
+<clipPath id="cp">
+  <path d="M0 -40.5 A40.5 40.5 0 0 1 0 40.5 A40.5 40.5 0 0 1 0 -40.5 M23.5 -1L23.5 1L30.5 1L30.5 -1Z"></path>
+</clipPath>
+<g transform="translate(50,50)">
+<circle clip-path="url(#cp)" cx="0" cy="0" fill="none" r="26" stroke="#abbd81" stroke-width="5" stroke-dasharray="40.840704496667314 0 0 0 0 163.36281798666926">
+<animate attributeName="stroke-dasharray" dur="1s" repeatCount="indefinite" begin="-0.1s" keyTimes="0;0.2;0.4;0.6;0.8;1" values="
+0 0 0 0 0 163.36281798666926;
+0 0 0 0 0 163.36281798666926;
+0 0 81.68140899333463 0 0 163.36281798666926;
+0 0 163.36281798666926 0 0 163.36281798666926;
+0 0 81.68140899333463 0 0 163.36281798666926;
+0 0 0 0 0 163.36281798666926
+"></animate>
+<animateTransform attributeName="transform" type="rotate" dur="1s" repeatCount="indefinite" begin="-0.1s" values="0;0;0;0;180;360"></animateTransform>
+</circle>
+
+<circle cx="0" cy="0" fill="none" r="32" stroke="#f8b26a" stroke-width="5" stroke-dasharray="100.53096491487338 0 0 201.06192982974676">
+<animate attributeName="stroke-dasharray" dur="1s" repeatCount="indefinite" begin="0s" values="
+0 0 0 0 0 201.06192982974676;
+0 0 100.53096491487338 0 0 201.06192982974676;
+0 0 100.53096491487338 0 0 201.06192982974676;
+0 0 100.53096491487338 0 0 201.06192982974676;
+0 0 100.53096491487338 0 0 201.06192982974676;
+0 0 0 0 0 201.06192982974676
+"></animate>
+<animateTransform attributeName="transform" type="rotate" dur="1s" repeatCount="indefinite" begin="0s" values="0;0;0;180;180;360"></animateTransform>
+</circle>
+
+<circle cx="0" cy="0" fill="none" r="38" stroke="#e15b64" stroke-width="5" stroke-dasharray="119.38052083641213 0 0 238.76104167282426" transform="rotate(45)">
+<animate attributeName="stroke-dasharray" dur="1s" repeatCount="indefinite" begin="0s" keyTimes="0;0.06;0.1;0.3;0.45;0.5;0.7;0.90;1" values="
+0 0 89.5353906273091 0 0 238.76104167282426;
+0 0 89.5353906273091 0 0 238.76104167282426;
+0 0 119.38052083641213 0 0 238.76104167282426;
+0 0 119.38052083641213 0 0 238.76104167282426;
+0 0 29.845130209103033 0 0 238.76104167282426;
+0 0 29.845130209103033 0 0 238.76104167282426;
+0 0 119.38052083641213 0 0 238.76104167282426;
+0 0 119.38052083641213 0 0 238.76104167282426;
+0 0 89.5353906273091 0 0 238.76104167282426
+"></animate>
+<animateTransform attributeName="transform" type="rotate" dur="1s" repeatCount="indefinite" begin="0s" keyTimes="0;0.06;0.1;0.3;0.5;0.6;0.8;0.90;1" values="-60;0;0;0;180;180;180;180;300"></animateTransform>
+</circle>
+</g>
+</svg>`
+
+    function displayGalleryAnimations() {
       var next = 0
       myInterval = setInterval(function () {
         if (next == $('.animate-box').length) {
@@ -378,7 +506,84 @@
           $($('.animate-box')[next++]).addClass('fadeInUp animated')
         }
       }, 50);
-    })
+    }
+
+    function paginationFunctions() {
+      // source: https://codepen.io/jsnanigans/full/dXAYBJ
+      var paginationPage = parseInt($('.cdp').attr('actpage'), 10);
+      $('.cdp_i').on('click', function(){
+        var go = $(this).attr('href').replace('#!', '');
+        if (go === '+1') {
+          paginationPage++;
+        } else if (go === '-1') {
+          paginationPage--;
+        }else{
+          paginationPage = parseInt(go, 10);
+        }
+        $('.cdp').attr('actpage', paginationPage);
+      });
+    }
+
+function buildPost(post) {
+  var image = post.sample_url ? post.sample_url : post.file_url
+  return `<div class="animate-box">
+            <div class="card__image">
+              <a class="spotlight" href="${image}">
+                <img class="card__img" src="${post.preview_url}">
+              </a>
+              <div class="card__content">
+                <div class="card-icons">
+                  <i class="fa-solid fa-eye" data-bs-toggle="tooltip" title="Ver"></i>
+                  <i class="far fa-heart" data-bs-toggle="tooltip" title="Agregar a favoritos"></i>
+                </div>
+              </div>
+            </div>
+          </div>`
+}
+
+function buildPagination(gallery) {
+  var count = gallery["@attributes"].count
+  var limit = gallery["@attributes"].limit
+  var offset = gallery["@attributes"].offset
+
+  pages = Math.ceil(count / limit)
+
+  if (pages == 1)
+    return ''
+  else if (pages > 500)
+    pages = 500
+
+  var pages_html = ""
+  for (var i=1; i<=pages; i++) {
+    pages_html += `<a href="#!${i}" class="cdp_i">${i}</a>`
+  }
+
+  return `<div class="pagination-trigger">
+            <div class="content_detail__pagination cdp" actpage="1">
+              <a href="#!-1" class="cdp_i">prev</a>
+              ${pages_html}
+              <a href="#!+1" class="cdp_i">next</a>
+            </div>
+          </div>`
+}
+
+// Spotlight:   https://github.com/nextapps-de/spotlight
+function spotlightConfig($this) {
+  var clicked_index = $this.closest('.animate-box').index() + 1
+  return {
+    animation: 'fade',
+    page: false,
+    theme: true,
+    play: true,
+    infinite: true,
+    autohide: 1,
+    //title: 'LocalBooru Gallery',
+    spinner: true,
+    download: true,
+    index: clicked_index,
+  }
+}
+
   </script>
 </body>
 </html>
