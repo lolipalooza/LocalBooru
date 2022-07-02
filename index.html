@@ -424,6 +424,7 @@
 
 function clickOnPaginationButtons(e) {
   var ipc = e.data.ipc
+  var tags = $('.searchInput').val()
   var page = $('.content_detail__pagination').attr('actpage') - 1
   var href = $(this).attr('href')
   if (/[-+]1/.test(href)) {
@@ -432,7 +433,7 @@ function clickOnPaginationButtons(e) {
   $('.gallery').append(`<div class="loading">${loading}</div>`)
   $('.animate-box').remove()
 
-  ipc.send("gallery:require", page)
+  ipc.send("gallery:require", page, tags)
   ipc.once("gallery:view", (e, gallery) => {
     $('.loading').remove()
     var images = []
