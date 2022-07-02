@@ -4,7 +4,8 @@
   "description": "A booru like app to store custom settings in your own PC",
   "main": "index.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "compile": "electron-packager ."
   },
   "author": "",
   "license": "ISC",
