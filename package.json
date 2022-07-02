@@ -1,6 +1,6 @@
 {
   "name": "localbooru",
-  "version": "1.0.0",
+  "version": "0.5.0",
   "description": "A booru like app to store custom settings in your own PC",
   "main": "index.js",
   "scripts": {
