@@ -25,14 +25,32 @@
     ._menu {
       position: fixed;
       top: 0;
-      width: 100%;
+      width: calc(100vw - 20px);
       height: 24px;
       background: #2f3640;
       -webkit-user-select: none;
       -webkit-app-region: drag;
+      display: flex;
+      padding: 0px 10px;
+      align-items: center;
+      justify-content: end;
     }
     ._menu .no-drag {
       -webkit-app-region: no-drag;
+    }
+    ._menu > div > span {
+      padding: 0 4px;
+      text-shadow: 1px 1px 0 rgb(0 0 0 / 85%);
+      transition: all 1s ease;
+    }
+    ._menu > div > span:hover {
+      color: #c8e71f;
+      opacity: 1;
+    }
+    .btn-close {
+      background: none;
+      color: #fff;
+      opacity: 1;
     }
     .header {
       position: fixed;
@@ -107,6 +125,50 @@
       width: calc(100% - 15px);
         padding: 0 6px;
     }
+    .ui-menu {
+      background: #fff;
+      color: #000;
+      z-index: 1;
+      list-style-type: none;
+      padding: 5px 0;
+      margin-top: 12px;
+      overflow: auto;
+      max-height: 256px;
+      width: calc(100vw - 60px) !important;
+    }
+    .ui-menu .ui-menu-item {
+      padding: 1px 12px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .ui-menu .ui-menu-item:hover {
+      background: #f3d6f9;
+      border-left: 2px solid #a87bb1;
+      border-right: 2px solid #a87bb1;
+      border-top: 1px solid #e7b5f1;
+      border-bottom: 1px solid #e7b5f1;
+    }
+    .tag-count {
+      color: #bbb;
+    }
+    .tag-type-0, .tag-type-tag > a, a.tag-type-tag {color: #337ab7}
+    .tag-type-1, .tag-type-artist > a, a.tag-type-artist {color: #A00}
+    .tag-type-artist > a:hover {color: #9093FF}
+    .tag-type-4, .tag-type-character > a, a.tag-type-character  {color: #0A0}
+    .tag-type-character > a:hover {color: #9093FF}
+    .tag-type-3, .tag-type-copyright > a, a.tag-type-copyright  {color: #A0A}
+    .tag-type-copyright > a:hover {color: #9093FF}
+    .tag-type-5, .tag-type-metadata > a, a.tag-type-metadata  {color: #F80}
+    .tag-type-metadata > a:hover {color: #FA6}
+    .tag-type-deprecated > a, a.tag-type-deprecated  {
+      color: #c0c0c0 !important;
+      text-decoration: line-through;
+    }
+    .tag-type-deprecated > a:hover {
+      color: #c0c0c0;
+      text-decoration: line-through;
+    }
+    .tag-type-2 {text-decoration: line-through}
     .pagination-trigger {
       position: fixed;
       bottom: 0;
@@ -132,7 +194,10 @@
         margin: 80px 0 !important;
         animation: loading-anim 500ms ease both;
       }
-      .gallery > div:not(.loading) {
+      .pagination-trigger {
+        width: 100% !important;
+      }
+      .gallery > div:not(.loading):not(.pagination-trigger) {
         width: 32vw !important;
         min-width: unset;
         margin-top: unset !important;
@@ -263,13 +328,26 @@
         opacity: 1;
       }
     }
+    .video-post-icon {
+      position: absolute;
+      top: calc(50% - 32px);
+      left: calc(50% - 18px);
+      font-size: 2.5rem;
+      text-shadow: 1px 1px 4px #000;
+    }
   </style>
 </head>
 <body>
-  <section class="_menu"></section>
+  <section class="_menu">
+    <div>
+      <span class="no-drag btn-minimize">_</span>
+      <span class="no-drag btn-maximize"><i class="fa-light fa-square"></i></span>
+      <span class="no-drag btn-close"><i class="fa-solid fa-xmark"></i></span>
+    </div>
+  </section>
   <section class="header">
     <div class="searchBox">
-          <input class="searchInput" type="text" name="" placeholder="Search">
+          <input class="searchInput" type="text" placeholder="Search | Ex: blue_sky cloud 1girl">
           <i class="fa-solid fa-magnifying-glass"></i>
       </div>
   </section>
@@ -420,6 +498,57 @@
       })
 
       $('.gallery').html(`<div class="loading">${loading}</div>`)
+
+      $('.btn-minimize').on('click', function() {
+        ipc.send('minimize')
+      })
+
+      $('.btn-maximize').on('click', function() {
+        ipc.send('maximize')
+      })
+
+      $('.btn-close').on('click', function() {
+        ipc.send('close')
+      })
+
+      $( '.searchInput' )
+      // don't navigate away from the field on tab when selecting an item
+      .on( "keydown", function( event ) {
+        if ( event.keyCode === $.ui.keyCode.TAB && $( this ).autocomplete( "instance" ).menu.active ) {
+          event.preventDefault();
+        }
+      }).autocomplete({
+        source: function( request, response ) {
+          var search = request.term.split(/\s+/).pop()
+          ipc.send('tags:require', search)
+          ipc.once("tags:view", (e, _tags) => {
+            response( _tags.tag )
+          })
+        },
+        search: function() {
+          // custom minLength
+          var term = this.value.split(/\s+/).pop()
+          if ( term.length == 0 ) {
+            return false
+          }
+        },
+        focus: function() {
+          // prevent value inserted on focus
+          return false;
+        },
+        select: function( event, ui ) {
+          var terms = this.value.split(/\s+/)
+          terms.pop()
+          terms.push( ui.item.name )
+          terms.push( "" );
+          this.value = terms.join( " " );
+          return false;
+        }
+      }).autocomplete( "instance" )._renderItem = function( ul, item ) {
+        return $( "<li>" )
+          .append( `<span class="tag-type-${item.type}">${item.name}</span> <span class="tag-count">${item.count}</span>` )
+          .appendTo( ul )
+      }
     })
 
 function clickOnPaginationButtons(e) {
@@ -526,13 +655,34 @@ const loading = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www
     }
 
 function buildPost(post) {
+  var is_video = /\.(webm|mp4)$/.test(post.file_url)
+  var video_post_icon = `<div class="video-post-icon"><i class="fa-regular fa-circle-play"></i></div>`
+  var is_gif = /\.gif$/.test(post.file_url)
+  var gif_post_icon = `<div class="video-post-icon"><i class="fa-solid fa-photo-film"></i></div>`
+  var post_icon = null, post_source = null
+  
   var image = post.sample_url ? post.sample_url : post.file_url
-  return `<div class="animate-box">
+
+  if (is_video) {
+    post_icon_html = video_post_icon
+    post_source = `data-src-mp4="${post.file_url}" data-src-webm="https://img3.gelbooru.com/images/${post.directory}/${post.image}" data-poster="${post.preview_url}"`
+  }
+  else if (is_gif) {
+    post_icon_html = gif_post_icon
+    post_source = `href="${image}"`
+  }
+  else {
+    post_icon_html = ""
+    post_source = `href="${image}"`
+  }
+
+  return `<div class="animate-box" data-tags="${post.tags}">
             <div class="card__image">
-              <a class="spotlight" href="${image}">
+              <a class="spotlight" ${post_source}>
                 <img class="card__img" src="${post.preview_url}">
               </a>
               <div class="card__content">
+                ${post_icon_html}
                 <div class="card-icons">
                   <i class="fa-solid fa-eye" data-bs-toggle="tooltip" title="Ver"></i>
                   <i class="far fa-heart" data-bs-toggle="tooltip" title="Agregar a favoritos"></i>
@@ -549,7 +699,7 @@ function buildPagination(gallery) {
 
   pages = Math.ceil(count / limit)
 
-  if (pages == 1)
+  if (pages <= 1)
     return ''
   else if (pages > 500)
     pages = 500
@@ -571,7 +721,12 @@ function buildPagination(gallery) {
 // Spotlight:   https://github.com/nextapps-de/spotlight
 function spotlightConfig($this) {
   var clicked_index = $this.closest('.animate-box').index() + 1
-  return {
+  var tags = $this.closest('.animate-box').data('tags')
+  //var video_url = $this.closest('.animate-box').find('a.spotlight').data('src-mp4')
+  //var webm_url = $this.closest('.animate-box').find('a.spotlight').data('src-webm')
+  //var video_poster = $this.closest('.animate-box').find('a.spotlight').data('poster')
+  console.log(tags.split(' '))
+  var config = {
     animation: 'fade',
     page: false,
     theme: true,
@@ -582,7 +737,16 @@ function spotlightConfig($this) {
     spinner: true,
     download: true,
     index: clicked_index,
+    //description: tags,
+    //autoslide: true,
+    //progress: false,
+    media: video_url ? "video" : "image",
+    "src-mp4": video_url ?? null,
+    "src-webm": webm_url ?? null,
+    poster: video_poster ?? null,
   }
+  console.log(config)
+  return config
 }
 
   </script>

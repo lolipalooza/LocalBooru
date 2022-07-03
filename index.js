@@ -3,8 +3,10 @@
 const { app, BrowserWindow } = require('electron')
 const ipc = require("electron").ipcMain
 
+var win
+
 const createWindow = () => {
-  const win = new BrowserWindow({
+  win = new BrowserWindow({
     width: 1024,
     height: 625,
     frame: false,
@@ -35,7 +37,7 @@ ipc.on("deprecated", e => {
 const axios = require('axios').default
 
 ipc.on("gallery:require", (e, page, tags) => {
-  axios.get('https://gelbooru.com/index.php?page=dapi&s=post&q=index', {
+  axios.get('https://gelbooru.com/index.php', {
     params: {
       page: 'dapi',
       s: 'post',
@@ -57,3 +59,39 @@ ipc.on("gallery:require", (e, page, tags) => {
   //})
 })
 
+ipc.on('minimize', () => {
+  win.minimize()
+})
+
+ipc.on('maximize', () => {
+  if (!win.isMaximized())
+    win.maximize()
+  else win.unmaximize()
+})
+
+ipc.on('close', () => {
+  win.close()
+})
+
+ipc.on("tags:require", (e, tag) => {
+  axios.get('https://gelbooru.com/index.php', {
+    params: {
+      page: 'dapi',
+      s: 'tag',
+      q: 'index',
+      json: 1,
+      limit: '100',
+      orderby: 'count',
+      name_pattern: `${tag}%`,
+    }
+  }).then(function (response) {
+    const tags = response.data
+    e.sender.send("tags:view", tags)
+  })
+  .catch(function (error) {
+    console.log(error)
+  })
+  //.then(function () {
+  //  // always executed
+  //})
+})
