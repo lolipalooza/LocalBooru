@@ -316,7 +316,9 @@
     .animate-box:hover .card__image::before {
       opacity: 1;
       transition: all 0.5s ease;
-      box-shadow: 10px 20px 40px #000;
+    }
+    .animate-box:hover .card__image {
+      box-shadow: 10px 20px 40px rgb(0 0 0 / 35%);
     }
     @keyframes loading-anim {
       from {
@@ -328,12 +330,23 @@
         opacity: 1;
       }
     }
+    @keyframes update-effect {
+      from {
+        transform: scale(1.2) translateY(-38px);
+      }
+      to {
+        transform: scale(1) translateY(-38px);
+      }
+    }
     .video-post-icon {
       position: absolute;
       top: calc(50% - 32px);
       left: calc(50% - 18px);
       font-size: 2.5rem;
       text-shadow: 1px 1px 4px #000;
+    }
+    .fa-heart.update-effect {
+      animation: update-effect 500ms ease both;
     }
   </style>
 </head>
@@ -448,8 +461,9 @@
     $(document).ready(function(){
       const ipc = require("electron").ipcRenderer
       
-      ipc.send("gallery:require")
+      ipc.send("gallery:require", null, "hanakoganei_hibari")
       ipc.once("gallery:view", (e, gallery, images) => {
+        console.log(gallery)
         $('.gallery').html('')
         $.each(gallery.post, function( index, value ) {
           $('.gallery').append(buildPost(value))
@@ -461,6 +475,7 @@
         $('.fa-eye').on('click', function() {
           Spotlight.show(images, spotlightConfig($(this)))
         })
+        $('.fa-heart').on('click', {ipc: ipc}, addPostToFavourites)
         $('[data-bs-toggle=tooltip]').tooltip()
         displayGalleryAnimations()
         $('.content_detail__pagination a').on('click', {ipc: ipc}, clickOnPaginationButtons)
@@ -473,6 +488,7 @@
 
           ipc.send("gallery:require", null, tags)
           ipc.once("gallery:view", (e, gallery, images) => {
+            console.log(gallery)
             $('.gallery').html('')
             $.each(gallery.post, function( index, value ) {
               $('.gallery').append(buildPost(value))
@@ -484,6 +500,7 @@
             $('.fa-eye').on('click', function() {
               Spotlight.show(images, spotlightConfig($(this)))
             })
+            $('.fa-heart').on('click', {ipc: ipc}, addPostToFavourites)
             $('[data-bs-toggle=tooltip]').tooltip()
             displayGalleryAnimations()
             $('.content_detail__pagination a').on('click', {ipc: ipc}, clickOnPaginationButtons)
@@ -543,7 +560,29 @@
           .append( `<span class="tag-type-${item.type}">${item.name}</span> <span class="tag-count">${item.count}</span>` )
           .appendTo( ul )
       }
+
+      $('.card__image::before').on('click', function () {
+        console.log('card__image::before')
+      })
     })
+
+function addPostToFavourites(e) {
+  var ipc = e.data.ipc
+  var post_id = $(this).closest('.animate-box').data('id')
+  ipc.send("favorites:store", post_id)
+  ipc.once("favorites:success", (e, stored) => {
+    if (stored) {
+      $(this).tooltip('dispose').removeClass('fa-regular').addClass('fa-solid').attr('title', 'Quitar de favoritos').tooltip('show')
+    } else {
+      $(this).tooltip('dispose').removeClass('fa-solid').addClass('fa-regular').attr('title', 'Agregar a favoritos').tooltip('show')
+    }
+
+    //$(this).addClass('update-effect')
+    //$(this)
+    //  .off('mouseout', function () {$(this).removeClass('update-effect')})
+    //  .on('mouseout', function () {$(this).removeClass('update-effect')})
+  })
+}
 
 function clickOnPaginationButtons(e) {
   var ipc = e.data.ipc
@@ -566,6 +605,7 @@ function clickOnPaginationButtons(e) {
     $('.fa-eye').on('click', function() {
       Spotlight.show(images, spotlightConfig($(this)))
     })
+    $('.fa-heart').on('click', {ipc: ipc}, addPostToFavourites)
     $('[data-bs-toggle=tooltip]').tooltip()
 
     displayGalleryAnimations()
@@ -667,7 +707,11 @@ function buildPost(post) {
     post_source = `href="${image}"`
   }
 
-  return `<div class="animate-box" data-tags="${post.tags}">
+  var btn_add_to_favorites = '<i class="fa-regular fa-heart" data-bs-toggle="tooltip" title="Agregar a favoritos"></i>'
+  var btn_remove_favorite = '<i class="fa-solid fa-heart" data-bs-toggle="tooltip" title="Quitar de favoritos"></i>'
+  var favorite_btn = post.favorite ? btn_remove_favorite : btn_add_to_favorites
+
+  return `<div class="animate-box" data-id="${post.id}" data-tags="${post.tags}">
             <div class="card__image">
               <a class="spotlight" ${post_source}>
                 <img class="card__img" src="${post.preview_url}">
@@ -676,7 +720,7 @@ function buildPost(post) {
                 ${post_icon_html}
                 <div class="card-icons">
                   <i class="fa-solid fa-eye" data-bs-toggle="tooltip" title="Ver"></i>
-                  <i class="far fa-heart" data-bs-toggle="tooltip" title="Agregar a favoritos"></i>
+                  ${favorite_btn}
                 </div>
               </div>
             </div>
@@ -729,7 +773,6 @@ function spotlightConfig($this) {
     //autoslide: true,
     //progress: false,
   }
-  console.log(config)
   return config
 }
 
