@@ -48,8 +48,25 @@ ipc.on("gallery:require", (e, page, tags) => {
       tags: tags ?? '',
     }
   }).then(function (response) {
-    const gallery = response.data
-    e.sender.send("gallery:view", gallery)
+    var gallery = response.data
+    var images = []
+    gallery.post.forEach(post => {
+      var is_video = /\.(webm|mp4)$/.test(post.file_url)
+      if (is_video) {
+        images.push({
+          "media": "video",
+          "src-webm": `https://img3.gelbooru.com/images/${post.directory}/${post.image}`,
+          "src-mp4": post.file_url,
+          "poster": post.preview_url,
+          "preload": true,
+          "controls": true,
+        })
+      } else {
+        var image = post.sample_url ? post.sample_url : post.file_url
+        images.push({src: image})
+      }
+    })
+    e.sender.send("gallery:view", gallery, images)
   })
   .catch(function (error) {
     console.log(error)

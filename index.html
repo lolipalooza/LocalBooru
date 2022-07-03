@@ -449,12 +449,9 @@
       const ipc = require("electron").ipcRenderer
       
       ipc.send("gallery:require")
-      ipc.once("gallery:view", (e, gallery) => {
+      ipc.once("gallery:view", (e, gallery, images) => {
         $('.gallery').html('')
-        var images = []
         $.each(gallery.post, function( index, value ) {
-          var image = value.sample_url ? value.sample_url : value.file_url
-          images.push({src: image})
           $('.gallery').append(buildPost(value))
         })
 
@@ -475,12 +472,9 @@
           $('.gallery').html(`<div class="loading">${loading}</div>`)
 
           ipc.send("gallery:require", null, tags)
-          ipc.once("gallery:view", (e, gallery) => {
+          ipc.once("gallery:view", (e, gallery, images) => {
             $('.gallery').html('')
-            var images = []
             $.each(gallery.post, function( index, value ) {
-              var image = value.sample_url ? value.sample_url : value.file_url
-              images.push({src: image})
               $('.gallery').append(buildPost(value))
             })
 
@@ -563,12 +557,9 @@ function clickOnPaginationButtons(e) {
   $('.animate-box').remove()
 
   ipc.send("gallery:require", page, tags)
-  ipc.once("gallery:view", (e, gallery) => {
+  ipc.once("gallery:view", (e, gallery, images) => {
     $('.loading').remove()
-    var images = []
     $.each(gallery.post, function( index, value ) {
-      var image = value.sample_url ? value.sample_url : value.file_url
-      images.push({src: image})
       $('.pagination-trigger').before(buildPost(value))
     })
 
@@ -722,9 +713,6 @@ function buildPagination(gallery) {
 function spotlightConfig($this) {
   var clicked_index = $this.closest('.animate-box').index() + 1
   var tags = $this.closest('.animate-box').data('tags')
-  //var video_url = $this.closest('.animate-box').find('a.spotlight').data('src-mp4')
-  //var webm_url = $this.closest('.animate-box').find('a.spotlight').data('src-webm')
-  //var video_poster = $this.closest('.animate-box').find('a.spotlight').data('poster')
   console.log(tags.split(' '))
   var config = {
     animation: 'fade',
@@ -740,10 +728,6 @@ function spotlightConfig($this) {
     //description: tags,
     //autoslide: true,
     //progress: false,
-    media: video_url ? "video" : "image",
-    "src-mp4": video_url ?? null,
-    "src-webm": webm_url ?? null,
-    poster: video_poster ?? null,
   }
   console.log(config)
   return config
