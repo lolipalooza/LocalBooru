@@ -39,7 +39,17 @@ ipc.on("deprecated", e => {
 
 const axios = require('axios').default
 
-ipc.on("gallery:require", (e, page, tags) => {
+ipc.on("gallery:require", galleryRequire)
+
+function galleryRequire(e, page, tags, source) {
+  if (source == 'gelbooru') {
+    galleryRequireGelbooru(e, page, tags)
+  } else {
+    galleryRequireDatabase(e, page, tags)
+  }
+}
+
+function galleryRequireGelbooru(e, page, tags) {
   axios.get('https://gelbooru.com/index.php', {
     params: {
       page: 'dapi',
@@ -87,7 +97,36 @@ ipc.on("gallery:require", (e, page, tags) => {
   //.then(function () {
   //  // always executed
   //})
-})
+}
+
+function galleryRequireDatabase(e, page, tags) {
+  const db = new sqlite3.Database(path.join(__dirname, 'localbooru.db'))
+  var images = [], gallery = {post:[]}
+  db.serialize(() => {
+    db.each("SELECT * FROM posts ORDER BY change DESC", (err, row)=>{
+      var post = row
+      gallery.post.push(post)
+      if (/\.(webm|mp4)$/.test(post.file_url)) {
+        images.push({
+          "media": "video",
+          "src-webm": `https://img3.gelbooru.com/images/${post.directory}/${post.image}`,
+          "src-mp4": post.file_url,
+          "poster": post.preview_url,
+          "preload": true,
+          "controls": true,
+          description: post.tags,
+        })
+      } else {
+        var image = post.sample_url ? post.sample_url : post.file_url
+        images.push({src: image, description: post.tags})
+      }
+    })
+  })
+  db.close(function () {
+    gallery['@attributes'] = {count: gallery.post.length}
+    e.sender.send("gallery:view", gallery, images)
+  })
+}
 
 ipc.on('minimize', () => {
   win.minimize()

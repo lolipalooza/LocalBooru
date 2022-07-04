@@ -12,6 +12,8 @@
   <link rel="stylesheet" type="text/css" href="node_modules/sweetalert2/dist/sweetalert2.min.css">
 
   <link rel="stylesheet" type="text/css" href="pagination.css">
+  <link rel="stylesheet" type="text/css" href="checkbox.css">
+
   <style type="text/css">
     /* width */
     ::-webkit-scrollbar {
@@ -138,6 +140,28 @@
       list-style-type: square;
       padding-left: 15px;
       margin: 6px 0;
+    }
+    .source-checkbox {
+      display: flex;
+      justify-content: center;
+    }
+    .source-checkbox .toggler-wrapper {
+      width: 100px;
+      height: 20px;
+    }
+    .source-checkbox .toggler-wrapper.style-2 .toggler-knob:before {
+      content: 'Local';
+      left: 8px;
+    }
+    .source-checkbox .toggler-wrapper.style-2 .toggler-knob:after {
+      content: 'Gelbooru';
+      right: 8px;
+    }
+    .source-checkbox .toggler-wrapper .toggler-slider {
+      background-color: #2f3640;
+    }
+    .source-checkbox .toggler-wrapper input[type="checkbox"]:checked+.toggler-slider {
+      background-color: #683954;
     }
     .searchBox {
       background: #2f3640;
@@ -404,6 +428,14 @@
   </section>
   <section class="content">
     <div class="side">
+      <div class="source-checkbox">
+        <label class="toggler-wrapper style-2">
+          <input type="checkbox" >
+          <div class="toggler-slider">
+            <div class="toggler-knob"></div>
+          </div>
+        </label>
+      </div>
       <div class="tags">
         <div><strong>Artists:</strong></div>
         <ul>
@@ -500,9 +532,9 @@
   <script type="text/javascript">
     $(document).ready(function(){
       const ipc = require("electron").ipcRenderer
-      
-      ipc.send("gallery:require", null, "hanakoganei_hibari")
-      ipc.once("gallery:view", (e, gallery, images) => {
+
+      function galleryDefaultView(e, gallery, images) {
+        console.log(gallery)
         $('.gallery').html('')
         $.each(gallery.post, function( index, value ) {
           $('.gallery').append(buildPost(value))
@@ -519,14 +551,26 @@
         $('[data-bs-toggle=tooltip]').tooltip()
         displayGalleryAnimations()
         $('.content_detail__pagination a').on('click', {ipc: ipc}, clickOnPaginationButtons)
+      }
+
+      var source = getCurrentSourceCheckboxState()
+      ipc.send("gallery:require", null, "hanakoganei_hibari", source)
+      ipc.once("gallery:view", galleryDefaultView)
+
+      $('.source-checkbox input').on('change', function(){
+        var source = getCurrentSourceCheckboxState()
+        $('.gallery').html(`<div class="loading">${loading}</div>`)
+        ipc.send("gallery:require", null, "hanakoganei_hibari", source)
+        ipc.once("gallery:view", galleryDefaultView)
       })
 
       $('.searchInput').on("keypress", function(e) {
         if (e.which==13) {
           var tags = $(this).val()
+          var source = getCurrentSourceCheckboxState()
           $('.gallery').html(`<div class="loading">${loading}</div>`)
 
-          ipc.send("gallery:require", null, tags)
+          ipc.send("gallery:require", null, tags, source)
           ipc.once("gallery:view", (e, gallery, images) => {
             $('.gallery').html('')
             $.each(gallery.post, function( index, value ) {
@@ -601,6 +645,10 @@
           .appendTo( ul )
       }
     })
+      
+function getCurrentSourceCheckboxState () {
+  return $('.source-checkbox input').is(':checked') ? 'gelbooru' : 'local'
+}
 
 function editPostDetails(e) {
   // avoid the click on image interfiere with this
@@ -682,6 +730,7 @@ function clickOnPaginationButtons(e) {
   var ipc = e.data.ipc
   var tags = $('.searchInput').val()
   var page = $('.content_detail__pagination').attr('actpage') - 1
+  var source = getCurrentSourceCheckboxState()
   var href = $(this).attr('href')
   if (/[-+]1/.test(href)) {
     page = /-1/.test(href) ? page - 1 : page + 1
@@ -689,7 +738,7 @@ function clickOnPaginationButtons(e) {
   $('.gallery').append(`<div class="loading">${loading}</div>`)
   $('.animate-box').remove()
 
-  ipc.send("gallery:require", page, tags)
+  ipc.send("gallery:require", page, tags, source)
   ipc.once("gallery:view", (e, gallery, images) => {
     $('.loading').remove()
     $.each(gallery.post, function( index, value ) {
@@ -824,7 +873,7 @@ function buildPost(post) {
 
 function buildPagination(gallery) {
   var count = gallery["@attributes"].count
-  var limit = gallery["@attributes"].limit
+  var limit = gallery["@attributes"].limit ?? 9999999
   var offset = gallery["@attributes"].offset
 
   pages = Math.ceil(count / limit)
