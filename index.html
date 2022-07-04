@@ -4,11 +4,40 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>My App Layout</title>
+
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
+  
   <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
   
+  <link rel="stylesheet" type="text/css" href="node_modules/sweetalert2/dist/sweetalert2.min.css">
+
   <link rel="stylesheet" type="text/css" href="pagination.css">
   <style type="text/css">
+    /* width */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    /* Track */
+    ::-webkit-scrollbar-track {
+      box-shadow: inset 0 0 5px rgb(128 128 128 / 60%);
+      border-radius: 10px;
+    }
+
+    /* Handle */
+    ::-webkit-scrollbar-thumb {
+      background: rgb(47 54 64 / 50%);
+      border-radius: 10px;
+    }
+
+    .side::-webkit-scrollbar, .gallery::-webkit-scrollbar {
+      width: 0;
+    }
+
+    .side:hover::-webkit-scrollbar, .gallery:hover::-webkit-scrollbar {
+      width: 6px;
+    }
+
     section, div {
       box-sizing: content-box;
     }
@@ -21,6 +50,9 @@
       padding: 0;
       color: #fff;
       overflow: hidden;
+    }
+    .text-left {
+      text-align: left;
     }
     ._menu {
       position: fixed;
@@ -68,6 +100,9 @@
       flex-basis: 12rem;
       flex-grow: 0;
       flex-shrink: 0;
+      height: calc(100vh - 68px);
+      overflow: auto;
+      margin-top: 20px;
     }
     .side .folders ul {
       list-style-type: disclosure-closed;
@@ -348,6 +383,9 @@
     .fa-heart.update-effect {
       animation: update-effect 500ms ease both;
     }
+    .swal2-container textarea, .swal2-container input, .swal2-container label {
+      font-size: .72rem;
+    }
   </style>
 </head>
 <body>
@@ -456,6 +494,8 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2" crossorigin="anonymous"></script>
   
   <script type="text/javascript" src="spotlight.bundle.js"></script>
+
+  <script src="node_modules/sweetalert2/dist/sweetalert2.min.js"></script>
   
   <script type="text/javascript">
     $(document).ready(function(){
@@ -463,7 +503,6 @@
       
       ipc.send("gallery:require", null, "hanakoganei_hibari")
       ipc.once("gallery:view", (e, gallery, images) => {
-        console.log(gallery)
         $('.gallery').html('')
         $.each(gallery.post, function( index, value ) {
           $('.gallery').append(buildPost(value))
@@ -472,9 +511,10 @@
         $('.gallery').append(buildPagination(gallery))
         paginationFunctions()
 
-        $('.fa-eye').on('click', function() {
+        $('.card__image').before().on('click', function(e) {
           Spotlight.show(images, spotlightConfig($(this)))
         })
+        $('.fa-pen-to-square').on('click', {ipc: ipc}, editPostDetails)
         $('.fa-heart').on('click', {ipc: ipc}, addPostToFavourites)
         $('[data-bs-toggle=tooltip]').tooltip()
         displayGalleryAnimations()
@@ -488,7 +528,6 @@
 
           ipc.send("gallery:require", null, tags)
           ipc.once("gallery:view", (e, gallery, images) => {
-            console.log(gallery)
             $('.gallery').html('')
             $.each(gallery.post, function( index, value ) {
               $('.gallery').append(buildPost(value))
@@ -497,9 +536,10 @@
             $('.gallery').append(buildPagination(gallery))
             paginationFunctions()
 
-            $('.fa-eye').on('click', function() {
+            $('.card__image').before().on('click', function() {
               Spotlight.show(images, spotlightConfig($(this)))
             })
+            $('.fa-pen-to-square').on('click', {ipc: ipc}, editPostDetails)
             $('.fa-heart').on('click', {ipc: ipc}, addPostToFavourites)
             $('[data-bs-toggle=tooltip]').tooltip()
             displayGalleryAnimations()
@@ -560,13 +600,67 @@
           .append( `<span class="tag-type-${item.type}">${item.name}</span> <span class="tag-count">${item.count}</span>` )
           .appendTo( ul )
       }
-
-      $('.card__image::before').on('click', function () {
-        console.log('card__image::before')
-      })
     })
 
+function editPostDetails(e) {
+  // avoid the click on image interfiere with this
+  if (!e) e = window.event
+  e.stopPropagation()
+
+  var ipc = e.data.ipc
+  var post_id = $(this).closest('.animate-box').data('id')
+  ipc.send("post:require", post_id)
+  ipc.once("post:response", (e, gelbooru_post, localbooru_post) => {
+    var post = localbooru_post ?? gelbooru_post
+    var local_directory = post.local_directory ?? ""
+    var custom_tags = post.custom_tags ?? ""
+    Swal.fire({
+      title: '<h3 class="text-left"><i class="fa-solid fa-pen-to-square"></i> Editar detalles</h3>',
+      //width: 600,
+      //padding: '3em',
+      color: '#716add',
+      background: '#fff url(images/trees.png)',
+      backdrop: `
+        rgba(0,0,123,0.4)
+        url("images/nyan-cat.gif")
+        left top
+        no-repeat
+      `,
+      html: `
+        <div class="input-group mb-3">
+          <label for="tags" class="form-label col-12 text-left">Default Tags:</label>
+          <textarea class="form-control col-12" id="tags" rows="6" placeholder="Etiquetas" disabled readonly>${post.tags}</textarea>
+        </div>
+        <div class="input-group mb-3">
+          <label for="custom-tags" class="form-label col-12 text-left">Custom Tags:</label>
+          <textarea class="form-control col-12" id="custom-tags" rows="3" placeholder="Etiquetas Personalizadas">${custom_tags??""}</textarea>
+        </div>
+        <div class="input-group mb-3">
+          <label for="local_directory" class="form-label col-12 text-left">Directorio Local:</label>
+          <input type="text" class="form-control col-12" id="local_directory" placeholder="/custom/path" value="${local_directory}">
+        </div>
+      `,
+      confirmButtonText: '<i class="fa-solid fa-heart"></i> Guardar favorito',
+      showCancelButton: true,
+      cancelButtonText: '<i class="fa-solid fa-rectangle-xmark"></i> Cancelar',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        var custom_tags = $('#custom-tags').val(),
+            local_directory = $('#local_directory').val()
+        ipc.send("post:edit", post_id, custom_tags, local_directory)
+        ipc.once("post:updated", (e) => {
+          Swal.fire('¡Post guardado en favoritos!', '', 'success')
+        })
+      }
+    })
+  })
+}
+
 function addPostToFavourites(e) {
+  // avoid the click on image interfiere with this
+  if (!e) e = window.event
+  e.stopPropagation()
+
   var ipc = e.data.ipc
   var post_id = $(this).closest('.animate-box').data('id')
   ipc.send("favorites:store", post_id)
@@ -602,9 +696,10 @@ function clickOnPaginationButtons(e) {
       $('.pagination-trigger').before(buildPost(value))
     })
 
-    $('.fa-eye').on('click', function() {
+    $('.card__image').before().on('click', function() {
       Spotlight.show(images, spotlightConfig($(this)))
     })
+    $('.fa-pen-to-square').on('click', {ipc: ipc}, editPostDetails)
     $('.fa-heart').on('click', {ipc: ipc}, addPostToFavourites)
     $('[data-bs-toggle=tooltip]').tooltip()
 
@@ -719,7 +814,7 @@ function buildPost(post) {
               <div class="card__content">
                 ${post_icon_html}
                 <div class="card-icons">
-                  <i class="fa-solid fa-eye" data-bs-toggle="tooltip" title="Ver"></i>
+                  <i class="fa-solid fa-pen-to-square" data-bs-toggle="tooltip" title="Editar detalles"></i>
                   ${favorite_btn}
                 </div>
               </div>
@@ -757,21 +852,40 @@ function buildPagination(gallery) {
 function spotlightConfig($this) {
   var clicked_index = $this.closest('.animate-box').index() + 1
   var tags = $this.closest('.animate-box').data('tags')
-  console.log(tags.split(' '))
   var config = {
     animation: 'fade',
-    page: false,
-    theme: true,
-    play: true,
+    control: ['prev', 'next', 'download', 'play', 'theme', 'zoom', 'autofit', 'close'],
     infinite: true,
-    autohide: 1,
+    autohide: 'all',
     //title: 'LocalBooru Gallery',
     spinner: true,
-    download: true,
     index: clicked_index,
     //description: tags,
     //autoslide: true,
     //progress: false,
+    onshow: function(index){
+      // the method "addControl" returns the new created control element
+      like = Spotlight.addControl("like", function() {
+        // get the current like state
+        // at this point we use the stored last index from the variable "slide"
+        const current_like_state = !images[clicked_index].like;
+
+        // toggles the current like state
+        images[clicked_index].like = current_like_state;
+
+        // assign the state as class to visually represent the current like state
+        this.classList.toggle("on")
+
+        if(current_like_state){
+
+            // do something if liked ...
+        }
+        else{
+
+            // do something if unliked ...
+        }
+      })
+    },
   }
   return config
 }

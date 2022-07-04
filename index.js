@@ -67,10 +67,11 @@ ipc.on("gallery:require", (e, page, tags) => {
                 "poster": post.preview_url,
                 "preload": true,
                 "controls": true,
+                description: post.tags,
               })
             } else {
               var image = post.sample_url ? post.sample_url : post.file_url
-              images.push({src: image})
+              images.push({src: image, description: post.tags})
             }
           })
         })
@@ -154,13 +155,13 @@ ipc.on("favorites:store", (e, post_id) => {
         var stmt = db.prepare(`INSERT INTO posts (post_id, created_at, score, width, height, md5, directory,
           image, rating, source, change, owner, creator_id, parent_id, sample, preview_height, preview_width,
           tags, title, has_notes, has_comments, file_url, preview_url, sample_url, sample_height, sample_width,
-          status, post_locked, has_children, local_directory)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+          status, post_locked, has_children, local_directory, custom_tags)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
         stmt.run(post.id, post.created_at, post.score, post.width, post.height, post.md5, post.directory,
           post.image, post.rating, post.source, post.change, post.owner, post.creator_id, post.parent_id,
           post.sample, post.preview_height, post.preview_width, post.tags, post.title, post.has_notes,
           post.has_comments, post.file_url, post.preview_url, post.sample_url, post.sample_height,
-          post.sample_width, post.status, post.post_locked, post.has_children, "/monas chinas")
+          post.sample_width, post.status, post.post_locked, post.has_children, "/monas chinas", "")
         stmt.finalize(function () {stored = true})
       }
     })
@@ -171,6 +172,76 @@ ipc.on("favorites:store", (e, post_id) => {
   .catch(function (error) {
     console.log(error)
   })
+})
+
+ipc.on("post:require", (e, post_id) => {
+  axios.get('https://gelbooru.com/index.php', {
+    params: {
+      page: 'dapi',
+      s: 'post',
+      q: 'index',
+      json: 1,
+      id: post_id,
+    }
+  }).then(function (response) {
+    const gelbooru_post = response.data.post[0]
+    var db = new sqlite3.Database(path.join(__dirname, 'localbooru.db'))
+    var localbooru_post = null
+    db.get("SELECT * FROM posts WHERE post_id = ?", post_id, (err, row)=>{
+      localbooru_post = row
+    })
+    db.close(function () {
+      e.sender.send("post:response", gelbooru_post, localbooru_post)
+    })
+  })
+  .catch(function (error) {
+    console.log(error)
+  })
+  //.then(function () {
+  //  // always executed
+  //})
+})
+
+ipc.on("post:edit", (e, post_id, custom_tags, local_directory) => {
+  axios.get('https://gelbooru.com/index.php', {
+    params: {
+      page: 'dapi',
+      s: 'post',
+      q: 'index',
+      json: 1,
+      id: post_id,
+    }
+  }).then(function (response) {
+    const post = response.data.post[0]
+    var db = new sqlite3.Database(path.join(__dirname, 'localbooru.db'))
+    
+    //db.get("SELECT * FROM posts WHERE post_id = ?", post_id, (err, row)=>{
+      //post = row
+      // store the current post into database
+      var stmt = db.prepare(`INSERT INTO posts (post_id, created_at, score, width, height, md5, directory,
+        image, rating, source, change, owner, creator_id, parent_id, sample, preview_height, preview_width,
+        tags, title, has_notes, has_comments, file_url, preview_url, sample_url, sample_height, sample_width,
+        status, post_locked, has_children, local_directory, custom_tags)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(post_id) DO UPDATE SET local_directory=?, custom_tags=?`)
+      stmt.run(post_id, post.created_at, post.score, post.width, post.height, post.md5, post.directory,
+        post.image, post.rating, post.source, post.change, post.owner, post.creator_id, post.parent_id,
+        post.sample, post.preview_height, post.preview_width, post.tags, post.title, post.has_notes,
+        post.has_comments, post.file_url, post.preview_url, post.sample_url, post.sample_height,
+        post.sample_width, post.status, post.post_locked, post.has_children, local_directory, custom_tags,
+        local_directory, custom_tags)
+      stmt.finalize()
+    //})
+    db.close(function () {
+      e.sender.send("post:updated")
+    })
+  })
+  .catch(function (error) {
+    console.log(error)
+  })
+  //.then(function () {
+  //  // always executed
+  //})
 })
 
 /*
