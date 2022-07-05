@@ -62,12 +62,14 @@
       width: calc(100vw - 20px);
       height: 24px;
       background: #2f3640;
-      -webkit-user-select: none;
-      -webkit-app-region: drag;
       display: flex;
       padding: 0px 10px;
       align-items: center;
       justify-content: end;
+    }
+    ._menu.draggable {
+      -webkit-user-select: none;
+      -webkit-app-region: drag;
     }
     ._menu .no-drag {
       -webkit-app-region: no-drag;
@@ -413,7 +415,7 @@
   </style>
 </head>
 <body>
-  <section class="_menu">
+  <section class="_menu draggable">
     <div>
       <span class="no-drag btn-minimize">_</span>
       <span class="no-drag btn-maximize"><i class="fa-light fa-square"></i></span>
@@ -557,6 +559,7 @@
 
         $('.card__image').before().on('click', function(e) {
           Spotlight.show(images, spotlightConfig($(this)))
+          $('#spotlight').unbind().on('mouseleave', function (){Spotlight.menu(true)})
         })
         $('.fa-pen-to-square').on('click', {ipc: ipc}, editPostDetails)
         $('.fa-heart').on('click', {ipc: ipc}, addPostToFavourites)
@@ -939,7 +942,8 @@ function spotlightConfig($this) {
     //description: tags,
     //autoslide: true,
     //progress: false,
-    onshow: function(index){
+    onshow: function(index){ // fires when gallery opens
+      $('._menu').removeClass('draggable')
       // the method "addControl" returns the new created control element
       like = Spotlight.addControl("like", function() {
         // get the current like state
@@ -961,6 +965,13 @@ function spotlightConfig($this) {
             // do something if unliked ...
         }
       })
+    },
+    onclose: function(index){ // fires when gallery is requested to close
+      $('._menu').addClass('draggable')
+
+      // remove the custom button, so you are able
+      // to open next gallery without this custom control
+      Spotlight.removeControl("like")
     },
   }
   return config
