@@ -5,18 +5,21 @@
   "main": "index.js",
   "scripts": {
     "start": "electron .",
-    "compile": "electron-packager ."
+    "compile": "electron-packager .",
+    "build2": "electron-rebuild -f -w sqlite3",
+    "postinstall": "electron-builder install-app-deps"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "electron": "^19.0.6",
+    "electron-builder": "^23.1.0",
     "electron-packager": "^15.5.1",
-    "electron-rebuild": "^3.2.7",
-    "sqlite3": "^5.0.8",
-    "sweetalert2": "^11.4.19"
+    "electron-rebuild": "^3.2.7"
   },
   "dependencies": {
-    "axios": "^0.27.2"
+    "axios": "^0.27.2",
+    "sqlite3": "^5.0.8",
+    "sweetalert2": "^11.4.19"
   }
 }
