@@ -533,8 +533,20 @@
     $(document).ready(function(){
       const ipc = require("electron").ipcRenderer
 
+      var settings = null
+      ipc.send("settings:require")
+      ipc.once("settings:view", (e, response) => {
+        settings = response
+        var default_source = settings.remember_last_source
+        var default_tags = settings.remember_last_search
+
+        setSourceCheckboxState(default_source)
+        $('.searchInput').val(default_tags)
+        ipc.send("gallery:require", null, default_tags, default_source)
+        ipc.once("gallery:view", galleryDefaultView)
+      })
+
       function galleryDefaultView(e, gallery, images) {
-        console.log(gallery)
         $('.gallery').html('')
         $.each(gallery.post, function( index, value ) {
           $('.gallery').append(buildPost(value))
@@ -553,15 +565,18 @@
         $('.content_detail__pagination a').on('click', {ipc: ipc}, clickOnPaginationButtons)
       }
 
-      var source = getCurrentSourceCheckboxState()
-      ipc.send("gallery:require", null, "hanakoganei_hibari", source)
-      ipc.once("gallery:view", galleryDefaultView)
-
       $('.source-checkbox input').on('change', function(){
         var source = getCurrentSourceCheckboxState()
+        var tags = $('.searchInput').val()
         $('.gallery').html(`<div class="loading">${loading}</div>`)
-        ipc.send("gallery:require", null, "hanakoganei_hibari", source)
+        
+        ipc.send("gallery:require", null, tags, source)
         ipc.once("gallery:view", galleryDefaultView)
+
+        ipc.send("settings:edit", 'remember_last_source', source)
+        ipc.once("settings:updated", (e) => {
+          console.log(`updated settings.remember_last_source with value '${source}'...`)
+        })
       })
 
       $('.searchInput').on("keypress", function(e) {
@@ -569,6 +584,11 @@
           var tags = $(this).val()
           var source = getCurrentSourceCheckboxState()
           $('.gallery').html(`<div class="loading">${loading}</div>`)
+
+          ipc.send("settings:edit", 'remember_last_search', tags)
+          ipc.once("settings:updated", (e) => {
+            console.log(`updated settings.remember_last_search with value '${tags}'...`)
+          })
 
           ipc.send("gallery:require", null, tags, source)
           ipc.once("gallery:view", (e, gallery, images) => {
@@ -648,6 +668,13 @@
       
 function getCurrentSourceCheckboxState () {
   return $('.source-checkbox input').is(':checked') ? 'gelbooru' : 'local'
+}
+
+function setSourceCheckboxState(state) {
+  if (state == 'gelbooru')
+    $('.source-checkbox input').prop('checked', true)
+  else if (state == 'local' || true) // default
+    $('.source-checkbox input').prop('checked', false)
 }
 
 function editPostDetails(e) {

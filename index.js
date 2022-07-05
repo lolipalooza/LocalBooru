@@ -33,11 +33,31 @@ fs.readdirSync(folder).forEach(file => {
   gallery.push({src: folder+'/'+file})
 })
 
-ipc.on("deprecated", e => {
-  e.sender.send("gallery:view", gallery);
+const axios = require('axios').default
+
+ipc.on("settings:require", (e)=>{
+  var settings = null
+  const db = new sqlite3.Database(path.join(__dirname, 'localbooru.db'))
+  db.serialize(() => {
+    db.get("SELECT * FROM settings LIMIT 1", (err, row)=>{
+      if (row)
+        settings = row
+    })
+  })
+  db.close(function () {
+    e.sender.send("settings:view", settings)
+  })
 })
 
-const axios = require('axios').default
+ipc.on("settings:edit", (e, column, value) => {
+  const db = new sqlite3.Database(path.join(__dirname, 'localbooru.db'))
+  db.serialize(() => {
+    db.run(`UPDATE settings SET ${column} = ? WHERE id = 1`, value)
+  })
+  db.close(function () {
+    e.sender.send("settings:updated", true)
+  })
+})
 
 ipc.on("gallery:require", galleryRequire)
 
@@ -101,9 +121,64 @@ function galleryRequireGelbooru(e, page, tags) {
 
 function galleryRequireDatabase(e, page, tags) {
   const db = new sqlite3.Database(path.join(__dirname, 'localbooru.db'))
-  var images = [], gallery = {post:[]}
+  var images = [], gallery = {post:[]}, query = '', sort = null
   db.serialize(() => {
-    db.each("SELECT * FROM posts ORDER BY change DESC", (err, row)=>{
+    if (tags.trim()) {
+      var andQuery = []
+      // tested with "-rating:safe asdf~ as*ss* madoka {hibari ~ tsubame ~ kamome ~ suzume ~ tsugumi} {a ~ b}"
+      tags.trim().match(/({[^\s]+(\s+~\s+[^\s]+)+}|[^\s]+)/g).forEach(tag => {
+        var inverted = false
+
+        if (/^-/.test(tag)) {
+          tag = tag.replace(/^-/, "")
+          inverted = true
+        }
+
+        if (/^rating:/.test(tag)) {
+          tag = tag.replace(/^rating:/, "")
+          if (inverted) {
+            andQuery.push(`rating <> '${tag}'`)
+          } else andQuery.push(`rating = '${tag}'`)
+        }
+        else if (/^score:/.test(tag)) {
+          tag = tag.replace(/^rating:/, "")
+          andQuery.push(`score ${tag}`)
+        }
+        else if (/^sort:/.test(tag)) {
+          tag = tag.replace(/^sort:/, "")
+          var data = tag.split(/:/)
+          switch (data[0]) {
+            default:
+            case "id":      sort = `ORDER BY post_id`;  break
+            case "score":   sort = `ORDER BY score`;    break
+            case "rating":  sort = `ORDER BY rating`;   break
+            case "user":    sort = `ORDER BY owner`;    break
+            case "height":  sort = `ORDER BY height`;   break
+            case "width":   sort = `ORDER BY width`;    break
+            case "source":  sort = `ORDER BY source`;   break
+            case "updated": sort = `ORDER BY change`;   break
+            case "random":  sort = `ORDER BY RANDOM()`; break
+          }
+          if (data.length>1 && data[1] == 'desc')
+            sort += ' DESC'
+        }
+        else if (/{[^\s]+(\s+~\s+[^\s]+)+}/.test(tag)) {
+          var orQuery = []
+          tag.replace(/[{}~]/g, "").split(/\s+/).forEach(orTag => {
+            orQuery.push(`(tags LIKE '${orTag} %' OR tags LIKE '% ${orTag} %' OR tags LIKE '% ${orTag}')`)
+          })
+          andQuery.push("("+orQuery.join(" OR ")+")")
+        }
+        else if (inverted) {
+          andQuery.push(`(tags NOT LIKE '${tag} %' AND tags NOT LIKE '% ${tag} %' AND tags NOT LIKE '% ${tag}')`)
+        } else {
+          andQuery.push(`(tags LIKE '${tag} %' OR tags LIKE '% ${tag} %' OR tags LIKE '% ${tag}')`)
+        }
+      })
+      order_by = sort ?? "ORDER BY change DESC"
+      query = "SELECT * FROM posts WHERE "+andQuery.join(" AND ")+" "+order_by
+    } else query = "SELECT * FROM posts ORDER BY change DESC"
+    db.each(query, (err, row)=>{
       var post = row
       gallery.post.push(post)
       if (/\.(webm|mp4)$/.test(post.file_url)) {
