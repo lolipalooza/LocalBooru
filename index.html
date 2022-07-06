@@ -200,12 +200,12 @@
       max-height: 256px;
       width: calc(100vw - 60px) !important;
     }
-    .ui-menu .ui-menu-item {
+    .ui-menu .ui-menu-item div {
       padding: 1px 12px;
       display: flex;
       justify-content: space-between;
     }
-    .ui-menu .ui-menu-item:hover {
+    .ui-menu .ui-menu-item .ui-state-active {
       background: #f3d6f9;
       border-left: 2px solid #a87bb1;
       border-right: 2px solid #a87bb1;
@@ -674,9 +674,11 @@
       $( '.searchInput' )
       // don't navigate away from the field on tab when selecting an item
       .on( "keydown", function( event ) {
-        if ( (event.keyCode === $.ui.keyCode.TAB) && $( this ).autocomplete( "instance" ).menu.active ) {
-          event.preventDefault();
+        if ( event.keyCode === $.ui.keyCode.TAB && $( this ).autocomplete( "instance" ).menu.active ) {
+          event.preventDefault()
         }
+        if (event.keyCode === $.ui.keyCode.ENTER && !$( this ).autocomplete( "instance" ).menu.active)
+          $( this ).autocomplete( "close" )
       }).autocomplete({
         source: function( request, response ) {
           var search = request.term.split(/\s+/).pop()
@@ -706,7 +708,7 @@
         }
       }).autocomplete( "instance" )._renderItem = function( ul, item ) {
         return $( "<li>" )
-          .append( `<span class="tag-type-${item.type}">${item.name}</span> <span class="tag-count">${item.count}</span>` )
+          .append( `<div><span class="tag-type-${item.type}">${item.name}</span> <span class="tag-count">${item.count}</span></div>` )
           .appendTo( ul )
       }
     })
