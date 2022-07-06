@@ -86,6 +86,7 @@ function galleryRequireGelbooru(e, page, tags) {
     const db = new sqlite3.Database(path.join(__dirname, 'localbooru.db'))
     if (gallery.post) {
       gallery.post.forEach(post => {
+        post._source = 'gelbooru'
         db.serialize(() => {
           db.get("SELECT * FROM posts WHERE post_id = ?", post.id, (err, row)=>{
             post.favorite = row ? 1 : 0
@@ -97,11 +98,10 @@ function galleryRequireGelbooru(e, page, tags) {
                 "poster": post.preview_url,
                 "preload": true,
                 "controls": true,
-                description: post.tags,
               })
             } else {
               var image = post.sample_url ? post.sample_url : post.file_url
-              images.push({src: image, description: post.tags})
+              images.push({src: image})
             }
           })
         })
@@ -180,6 +180,10 @@ function galleryRequireDatabase(e, page, tags) {
     } else query = "SELECT * FROM posts ORDER BY change DESC"
     db.each(query, (err, row)=>{
       var post = row
+      post._source='local'
+      post.favorite = 1
+      post.id = post.post_id
+      delete post.post_id
       gallery.post.push(post)
       if (/\.(webm|mp4)$/.test(post.file_url)) {
         images.push({
@@ -189,11 +193,10 @@ function galleryRequireDatabase(e, page, tags) {
           "poster": post.preview_url,
           "preload": true,
           "controls": true,
-          description: post.tags,
         })
       } else {
         var image = post.sample_url ? post.sample_url : post.file_url
-        images.push({src: image, description: post.tags})
+        images.push({src: image})
       }
     })
   })
@@ -356,6 +359,35 @@ ipc.on("post:edit", (e, post_id, custom_tags, local_directory) => {
   //.then(function () {
   //  // always executed
   //})
+})
+
+ipc.on("tags:organize", (e, tags) => {
+  var _tags = [],
+      length = tags.split(/\s+/).length,
+      progress = 0
+  tags.split(/\s+/).forEach(tag => {
+    axios.get('https://gelbooru.com/index.php', {
+      params: {
+        page: 'dapi',
+        s: 'tag',
+        q: 'index',
+        json: 1,
+        name: tag,
+      }
+    }).then(function (response) {
+      progress++
+      var _tag = response.data.tag[0]
+      _tags.push(_tag)
+      
+      if (progress == length) {
+        _tags.sort((a,b) => (a.name > b.name) ? 1 : ((b.name > a.name) ? -1 : 0))
+        e.sender.send("tags:htmlresponse", _tags)
+      }
+    })
+    .catch(function (error) {
+      console.log(error)
+    })
+  })
 })
 
 /*

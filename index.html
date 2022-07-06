@@ -11,6 +11,9 @@
   
   <link rel="stylesheet" type="text/css" href="node_modules/sweetalert2/dist/sweetalert2.min.css">
 
+  <!-- animate.css: https://animate.style/ -->
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/animate.css@4.0.0/animate.min.css">
+
   <link rel="stylesheet" type="text/css" href="pagination.css">
   <link rel="stylesheet" type="text/css" href="checkbox.css">
 
@@ -412,6 +415,49 @@
     .swal2-container textarea, .swal2-container input, .swal2-container label {
       font-size: .72rem;
     }
+    #spotlight {
+      z-index: 999;
+    }
+    .spl-like {
+      background-image: url(icons/heart-outline.svg);
+      background-size: 23px;
+    }
+    .spl-like.on {
+      background-image: url(icons/heart.svg);
+    }
+    .spl-properties {
+      background-image: url(icons/eye-regular.svg);
+      background-size: 23px;
+    }
+    .swal2-html-container {
+      overflow: visible;
+    }
+    .post-details {
+      display: flex;
+      font-size: 10px;
+    }
+    .details-preview > img {
+      box-shadow: 0px 1px 3px 0px rgb(0 0 0 / 30%);
+      margin-bottom: 12px;
+      max-width: 90%;
+      max-height: 200px;
+    }
+    .post-details h5 {
+      font-size: 1.15rem;
+      margin: 2px 0;
+    }
+    .post-details .tags {
+      width: 50%;
+    }
+    .post-details .statistics {
+      padding-left: 5px;
+    }
+    .tag {
+      display: block;
+    }
+    .tag .count {
+      color: #ababab;
+    }
   </style>
 </head>
 <body>
@@ -558,7 +604,7 @@
         paginationFunctions()
 
         $('.card__image').before().on('click', function(e) {
-          Spotlight.show(images, spotlightConfig($(this)))
+          Spotlight.show(images, spotlightConfig(images, $(this), ipc))
           $('#spotlight').unbind().on('mouseleave', function (){Spotlight.menu(true)})
         })
         $('.fa-pen-to-square').on('click', {ipc: ipc}, editPostDetails)
@@ -577,9 +623,7 @@
         ipc.once("gallery:view", galleryDefaultView)
 
         ipc.send("settings:edit", 'remember_last_source', source)
-        ipc.once("settings:updated", (e) => {
-          console.log(`updated settings.remember_last_source with value '${source}'...`)
-        })
+        ipc.once("settings:updated", (e) => {})
       })
 
       $('.searchInput').on("keypress", function(e) {
@@ -589,9 +633,7 @@
           $('.gallery').html(`<div class="loading">${loading}</div>`)
 
           ipc.send("settings:edit", 'remember_last_search', tags)
-          ipc.once("settings:updated", (e) => {
-            console.log(`updated settings.remember_last_search with value '${tags}'...`)
-          })
+          ipc.once("settings:updated", (e) => {})
 
           ipc.send("gallery:require", null, tags, source)
           ipc.once("gallery:view", (e, gallery, images) => {
@@ -604,7 +646,7 @@
             paginationFunctions()
 
             $('.card__image').before().on('click', function() {
-              Spotlight.show(images, spotlightConfig($(this)))
+              Spotlight.show(images, spotlightConfig(images, $(this), ipc))
             })
             $('.fa-pen-to-square').on('click', {ipc: ipc}, editPostDetails)
             $('.fa-heart').on('click', {ipc: ipc}, addPostToFavourites)
@@ -632,7 +674,7 @@
       $( '.searchInput' )
       // don't navigate away from the field on tab when selecting an item
       .on( "keydown", function( event ) {
-        if ( event.keyCode === $.ui.keyCode.TAB && $( this ).autocomplete( "instance" ).menu.active ) {
+        if ( (event.keyCode === $.ui.keyCode.TAB) && $( this ).autocomplete( "instance" ).menu.active ) {
           event.preventDefault();
         }
       }).autocomplete({
@@ -686,7 +728,7 @@ function editPostDetails(e) {
   e.stopPropagation()
 
   var ipc = e.data.ipc
-  var post_id = $(this).closest('.animate-box').data('id')
+  var post_id = $(this).closest('.animate-box').find('meta').data('id')
   ipc.send("post:require", post_id)
   ipc.once("post:response", (e, gelbooru_post, localbooru_post) => {
     var post = localbooru_post ?? gelbooru_post
@@ -740,7 +782,7 @@ function addPostToFavourites(e) {
   e.stopPropagation()
 
   var ipc = e.data.ipc
-  var post_id = $(this).closest('.animate-box').data('id')
+  var post_id = $(this).closest('.animate-box').find('meta').data('id')
   ipc.send("favorites:store", post_id)
   ipc.once("favorites:success", (e, stored) => {
     if (stored) {
@@ -776,7 +818,7 @@ function clickOnPaginationButtons(e) {
     })
 
     $('.card__image').before().on('click', function() {
-      Spotlight.show(images, spotlightConfig($(this)))
+      Spotlight.show(images, spotlightConfig(images, $(this), ipc))
     })
     $('.fa-pen-to-square').on('click', {ipc: ipc}, editPostDetails)
     $('.fa-heart').on('click', {ipc: ipc}, addPostToFavourites)
@@ -885,7 +927,7 @@ function buildPost(post) {
   var btn_remove_favorite = '<i class="fa-solid fa-heart" data-bs-toggle="tooltip" title="Quitar de favoritos"></i>'
   var favorite_btn = post.favorite ? btn_remove_favorite : btn_add_to_favorites
 
-  return `<div class="animate-box" data-id="${post.id}" data-tags="${post.tags}">
+  return `<div class="animate-box">
             <div class="card__image">
               <a class="spotlight" ${post_source}>
                 <img class="card__img" src="${post.preview_url}">
@@ -898,6 +940,7 @@ function buildPost(post) {
                 </div>
               </div>
             </div>
+            <meta data-id="${post.id}" data-created_at="${post.created_at}" data-score="${post.score}" data-width="${post.width}" data-height="${post.height}" data-md5="${post.md5}" data-directory="${post.directory}" data-image="${post.image}" data-rating="${post.rating}" data-source="${post.source}" data-change="${post.change}" data-owner="${post.owner}" data-creator_id="${post.creator_id}" data-parent_id="${post.parent_id}" data-sample="${post.sample}" data-preview_height="${post.preview_height}" data-preview_width="${post.preview_width}" data-tags="${post.tags}" data-title="${post.title}" data-has_notes="${post.has_notes}" data-has_comments="${post.has_comments}" data-file_url="${post.file_url}" data-preview_url="${post.preview_url}" data-sample_url="${post.sample_url}" data-sample_height="${post.sample_height}" data-sample_width="${post.sample_width}" data-status="${post.status}" data-post_locked="${post.post_locked}" data-has_children="${post.has_children}" data-local_directory="${post.local_directory}" data-custom_tags="${post.custom_tags}" />
           </div>`
 }
 
@@ -928,9 +971,9 @@ function buildPagination(gallery) {
 }
 
 // Spotlight:   https://github.com/nextapps-de/spotlight
-function spotlightConfig($this) {
+function spotlightConfig(gallery, $this, ipc) {
   var clicked_index = $this.closest('.animate-box').index() + 1
-  var tags = $this.closest('.animate-box').data('tags')
+  var tags = $this.closest('.animate-box').find('meta').data('tags')
   var config = {
     animation: 'fade',
     control: ['prev', 'next', 'download', 'play', 'theme', 'zoom', 'autofit', 'close'],
@@ -948,10 +991,10 @@ function spotlightConfig($this) {
       like = Spotlight.addControl("like", function() {
         // get the current like state
         // at this point we use the stored last index from the variable "slide"
-        const current_like_state = !images[clicked_index].like;
+        const current_like_state = !gallery[clicked_index].like;
 
         // toggles the current like state
-        images[clicked_index].like = current_like_state;
+        gallery[clicked_index].like = current_like_state;
 
         // assign the state as class to visually represent the current like state
         this.classList.toggle("on")
@@ -965,6 +1008,103 @@ function spotlightConfig($this) {
             // do something if unliked ...
         }
       })
+      properties = Spotlight.addControl("properties", function() {
+        var id              = $this.closest('.animate-box').find('meta').data('id'),
+            post_id         = $this.closest('.animate-box').find('meta').data('post_id'),
+            created_at      = $this.closest('.animate-box').find('meta').data('created_at'),
+            score           = $this.closest('.animate-box').find('meta').data('score'),
+            width           = $this.closest('.animate-box').find('meta').data('width'),
+            height          = $this.closest('.animate-box').find('meta').data('height'),
+            md5             = $this.closest('.animate-box').find('meta').data('md5'),
+            directory       = $this.closest('.animate-box').find('meta').data('directory'),
+            image           = $this.closest('.animate-box').find('meta').data('image'),
+            rating          = $this.closest('.animate-box').find('meta').data('rating'),
+            source          = $this.closest('.animate-box').find('meta').data('source'),
+            change          = $this.closest('.animate-box').find('meta').data('change'),
+            owner           = $this.closest('.animate-box').find('meta').data('owner'),
+            creator_id      = $this.closest('.animate-box').find('meta').data('creator_id'),
+            parent_id       = $this.closest('.animate-box').find('meta').data('parent_id'),
+            sample          = $this.closest('.animate-box').find('meta').data('sample'),
+            preview_height  = $this.closest('.animate-box').find('meta').data('preview_height'),
+            preview_width   = $this.closest('.animate-box').find('meta').data('preview_width'),
+            tags            = $this.closest('.animate-box').find('meta').data('tags'),
+            title           = $this.closest('.animate-box').find('meta').data('title'),
+            has_notes       = $this.closest('.animate-box').find('meta').data('has_notes'),
+            has_comments    = $this.closest('.animate-box').find('meta').data('has_comments'),
+            file_url        = $this.closest('.animate-box').find('meta').data('file_url'),
+            preview_url     = $this.closest('.animate-box').find('meta').data('preview_url'),
+            sample_url      = $this.closest('.animate-box').find('meta').data('sample_url'),
+            sample_height   = $this.closest('.animate-box').find('meta').data('sample_height'),
+            sample_width    = $this.closest('.animate-box').find('meta').data('sample_width'),
+            status          = $this.closest('.animate-box').find('meta').data('status'),
+            post_locked     = $this.closest('.animate-box').find('meta').data('post_locked'),
+            has_children    = $this.closest('.animate-box').find('meta').data('has_children'),
+            local_directory = $this.closest('.animate-box').find('meta').data('local_directory'),
+            custom_tags     = $this.closest('.animate-box').find('meta').data('custom_tags')
+
+
+        ipc.send("tags:organize", tags)
+        ipc.once("tags:htmlresponse", (e, _tags) => {
+
+          Spotlight.zoom(1)
+          $('body').on('mousewheel', function () {Spotlight.zoom(1)})
+
+          var convertTagsToHtml = tag => `<span class="tag tag-type-${tag.type}">${tag.name} <span class="count">${tag.count}</span></span>`
+          var artist_tags = _tags.filter(t=>t.type==1).map(convertTagsToHtml).join('')
+          var character_tags = _tags.filter(t=>t.type==4).map(convertTagsToHtml).join('')
+          var copyright_tags = _tags.filter(t=>t.type==3).map(convertTagsToHtml).join('')
+          var metadata_tags = _tags.filter(t=>t.type==5).map(convertTagsToHtml).join('')
+          var regular_tags = _tags.filter(t=>t.type==0).map(convertTagsToHtml).join('')
+
+          Swal.fire({
+            background: '#fff url(images/trees.png)',
+            html: `
+              <div class="post-details">
+                <div>
+                  <h5>Artist</h5>
+                  <div class="text-left">${artist_tags}</div>
+                  <h5>Character</h5>
+                  <div class="text-left">${character_tags}</div>
+                  <h5>Copyright</h5>
+                  <div class="text-left">${copyright_tags}</div>
+                  <h5>Metadata</h5>
+                  <div class="text-left">${metadata_tags}</div>
+                  <h5>Tags</h5>
+                  <div class="text-left">${regular_tags}</div>
+                </div>
+                <div>
+                  <div class="details-preview"><img src="${preview_url}"></div>
+                  <div class="text-left">
+                    <h5>Estadísticas</h5>
+                    <div><strong>Id:</strong> ${id}</div>
+                    <div><strong>Posted:</strong> ${created_at}</div>
+                    <div><strong>Uploader:</strong> ${owner}</div>
+                    <div><strong>Size:</strong> ${width}x${height}</div>
+                    <div><strong>Rating:</strong> ${rating}</div>
+                    <div><strong>Score:</strong> ${score}</div>
+                  </div>
+                  <div class="text-left">
+                    <h5>Más información</h5>
+                    <div><strong>Md5:</strong> ${md5}</div>
+                    <div><strong>Source:</strong> ${source??'-'}</div>
+                    <div><strong>Change:</strong> ${change}</div>
+                    <div><strong>Parent:</strong> ${parent_id}</div>
+                    <div><strong>Title:</strong> ${title.trim()??'-'}</div>
+                    <div><strong>Has notes:</strong> ${has_notes?'Yes':'No'}</div>
+                    <div><strong>Has comments:</strong> ${has_comments?'Yes':'No'}</div>
+                    <div><strong>Has children:</strong> ${has_children?'Yes':'No'}</div>
+                    <div><strong>status:</strong> ${status}</div>
+                    <div><strong>Post locked:</strong> ${post_locked?'Yes':'No'}</div>
+                  </div>
+                </div>
+              </div>
+            `,
+          }).then((result) => {
+            if (result.isConfirmed)
+              $('body').unbind()
+          })
+        })
+      })
     },
     onclose: function(index){ // fires when gallery is requested to close
       $('._menu').addClass('draggable')
@@ -972,6 +1112,7 @@ function spotlightConfig($this) {
       // remove the custom button, so you are able
       // to open next gallery without this custom control
       Spotlight.removeControl("like")
+      Spotlight.removeControl("properties")
     },
   }
   return config
