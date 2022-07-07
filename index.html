@@ -1101,32 +1101,32 @@ const loading = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www
 </g>
 </svg>`
 
-    function displayGalleryAnimations() {
-      var next = 0
-      var myInterval = setInterval(function () {
-        if (next == $('.animate-box').length) {
-          clearInterval(myInterval)
-        } else {
-          $($('.animate-box')[next++]).addClass('fadeInUp animated')
-        }
-      }, 50);
+function displayGalleryAnimations() {
+  var next = 0
+  var myInterval = setInterval(function () {
+    if (next == $('.animate-box').length) {
+      clearInterval(myInterval)
+    } else {
+      $($('.animate-box')[next++]).addClass('fadeInUp animated')
     }
+  }, 50);
+}
 
-    function paginationFunctions() {
-      // source: https://codepen.io/jsnanigans/full/dXAYBJ
-      var paginationPage = parseInt($('.cdp').attr('actpage'), 10);
-      $('.cdp_i').on('click', function(){
-        var go = $(this).attr('href').replace('#!', '');
-        if (go === '+1') {
-          paginationPage++;
-        } else if (go === '-1') {
-          paginationPage--;
-        }else{
-          paginationPage = parseInt(go, 10);
-        }
-        $('.cdp').attr('actpage', paginationPage);
-      });
+function paginationFunctions() {
+  // source: https://codepen.io/jsnanigans/full/dXAYBJ
+  var paginationPage = parseInt($('.cdp').attr('actpage'), 10);
+  $('.cdp_i').on('click', function(){
+    var go = $(this).attr('href').replace('#!', '');
+    if (go === '+1') {
+      paginationPage++;
+    } else if (go === '-1') {
+      paginationPage--;
+    }else{
+      paginationPage = parseInt(go, 10);
     }
+    $('.cdp').attr('actpage', paginationPage);
+  });
+}
 
 function displaySideBarAnimations() {
   var _section = 0, _tag = 0
