@@ -205,6 +205,9 @@
       width: calc(100% - 15px);
         padding: 0 6px;
     }
+    .searchBox .fa-magnifying-glass {
+      font-size: 14px;
+    }
     .ui-menu {
       background: #fff;
       color: #000;
@@ -1032,8 +1035,9 @@ function mainTagsReload(posts, ipc) {
 
 function sideTagClick() {
   var tag = $(this).text().split(/\s+/)[0]
-  var search = $('.searchInput').val()
-  $('.searchInput').val(`${search} ${tag}`)
+  var search = $('.searchInput').val().split(/\s+/)
+  search.push(tag)
+  $('.searchInput').val(search.join(' '))
 }
 
 const loading = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="margin:auto;display:block;" width="200px" height="200px" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid">
