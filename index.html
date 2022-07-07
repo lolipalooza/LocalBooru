@@ -131,8 +131,15 @@
     .folder {
       cursor: default;
       transition: all .25s ease;
+      position: relative;
+      user-select: none;
     }
-    .folder:hover {
+    .folder:hover::before {
+      content: '';
+      position: absolute;
+      width: 1000%;
+      height: 100%;
+      left: -1000px;
       background: rgb(229 172 239 / 15%);
     }
     .gallery {
@@ -165,16 +172,10 @@
       padding: 0;
     }
     .side .tags li {
-      padding-left: 1.3em;
+      overflow: hidden;
     }
-    .side .tags li:before {
-      content: "\f02b";
-      display: inline-table;
-      vertical-align: top;
-      margin-left: -1.3em;
-      width: 1.3em;
-      font-family: FontAwesome;
-      color: #9b7f98;
+    .side .tag .fa-tags {
+      color: #fff;
     }
     .source-checkbox {
       /* display: flex; */
@@ -692,7 +693,7 @@
         <ul></ul>
       </div>
       <div class="tags metadata">
-        <div><strong>Copyright:</strong></div>
+        <div><strong>Metadata:</strong></div>
         <ul></ul>
       </div>
       <div class="tags regular">
@@ -703,26 +704,9 @@
         <div><strong>Folders:</strong></div>
         <ul>
           <li>
-            <div class="folder"><i class="fa-solid fa-caret-down"></i> <i class="fa-solid fa-folder-open"></i> Monas chinas</div>
+            <div class="folder"><i class="fa-solid fa-caret-down"></i> <i class="fa-solid fa-folder-open"></i> a folder</div>
             <ul>
-              <li><div class="folder"><i class="fa-solid fa-caret-right"></i> <i class="fa-solid fa-folder"></i> a</div></li>
-              <li>b</li>
-              <li>c</li>
-            </ul>
-          </li>
-          <li>
-            Ecchi
-            <ul>
-              <li>a</li>
-              <li>b</li>
-            </ul>
-          </li>
-          <li>
-            Hentai
-            <ul>
-              <li>a</li>
-              <li>b</li>
-              <li>c</li>
+              <li><div class="folder"><i class="fa-solid fa-caret-right"></i> <i class="fa-solid fa-folder"></i> a subfolder</div></li>
             </ul>
           </li>
         </ul>
@@ -756,7 +740,7 @@
       const ipc = require("electron").ipcRenderer      
 
       $('.tags.placeholder-glow').show()
-      $('.tags:not(.placeholder-glow)').hide()
+      $('.tags:not(.placeholder-glow),.folders').hide()
 
       var settings = null
       ipc.send("settings:require")
@@ -813,7 +797,7 @@
           var source = getCurrentSourceCheckboxState()
           $('.gallery').html(`<div class="loading">${loading}</div>`)
           $('.tags.placeholder-glow').show()
-          $('.tags:not(.placeholder-glow)').hide()
+          $('.tags:not(.placeholder-glow),.folders').hide()
 
           ipc.send("settings:edit", 'remember_last_search', tags)
           ipc.once("settings:updated", (e) => {})
@@ -1030,7 +1014,7 @@ function mainTagsReload(posts, ipc) {
   }
 
   ipc.once("tags:htmlresponse", (e, _tags) => {
-    var convertTagsToHtml = tag => `<li><span class="tag tag-type-${tag.type}" style="display:none">${tag.name} <span class="count">${tag.count}</span></span></li>`
+    var convertTagsToHtml = tag => `<li><span class="tag tag-type-${tag.type}" style="display:none"><i class="fa-solid fa-tags"></i> ${tag.name} <span class="count">${tag.count}</span></span></li>`
     var artist_tags = _tags.filter(t=>t.type==1).map(convertTagsToHtml).join('')
     var character_tags = _tags.filter(t=>t.type==4).map(convertTagsToHtml).join('')
     var copyright_tags = _tags.filter(t=>t.type==3).map(convertTagsToHtml).join('')
@@ -1131,14 +1115,24 @@ function paginationFunctions() {
 function displaySideBarAnimations() {
   var _section = 0, _tag = 0
   var sections = ['.artists','.characters','.copyright','.metadata','.regular']
+  $('.folders').css('visibility', 'hidden').show()
   var interval = setInterval(function () {
     if (_section == sections.length) {
       clearInterval(interval)
-      $('.tags, .side .tag').removeClass('animate__fadeInLeft animated')
+      setTimeout(function() {
+        $('.tags, .side .tag').removeClass('animate__fadeInRight animated')
+        $('.folders').css('visibility', 'visible').addClass('animate__fadeInRight animated')
+        setTimeout(function() {
+          $('.folders').removeClass('animate__fadeInRight animated')
+        }, 850)
+      }, 850)
     } else {
       var section = sections[_section]
       var tag = $($(section).find('.tag')[_tag])
-      if (_tag == $(section).find('.tag').length) {
+      if (_section==0 && _tag==0 && $(section).is(':hidden')) {
+        $(section).addClass('animate__fadeInRight animated')
+        $(section).show()
+      } else if(_tag == $(section).find('.tag').length) {
         _section++
         _tag=0
         section = sections[_section]
@@ -1368,6 +1362,77 @@ function spotlightConfig(gallery, $this, ipc) {
   }
   return config
 }
+
+var folders = {
+  root: [
+    '/Monas chinas',
+    '/Monas chinas/a',
+    '/Monas chinas/b',
+    '/Monas chinas/c',
+    '/Monas chinas/a/asdf',
+    '/Monas chinas/a/kek',
+    '/Monas chinas/a/kek/foo',
+    '/Monas chinas/a/kek/bar',
+    '/Ecchi',
+    '/Ecchi/a',
+    '/Ecchi/v',
+    '/Hentai/a',
+    '/Hentai/b',
+    '/Hentai/c',
+    '/Hentai/c/blowjobs',
+    '/Hentai/c/blowjobs/cum',
+    '/Hentai/c/blowjobs/cum/bukkakes',
+  ]
+}
+
+folders.get = route => {
+  if (!route.endsWith('/'))
+    route += '/'
+  var regex = new RegExp(`^${route}([^\/]+)`) 
+  return folders.root.filter(a=>a.match(regex))
+    .map(a=>a.match(regex)[1])
+    .unique()
+}
+
+folders.build = () => {
+  $('.folders>ul').html('')
+  folders.get('/').forEach(folder => {
+    $('.folders>ul').append(`
+      <li data-route="/${folder}">
+        <div class="folder">
+          <i class="fa-solid fa-caret-right"></i> <i class="fa-solid fa-folder"></i> ${folder}
+        </div>
+      </li>`)
+  })
+  $('.folder').on('click', folderClick)
+}
+
+function folderClick() {
+  if ($(this).closest('li').find('ul').length == 0)
+  {
+    $(this).find('.fa-caret-right').removeClass('fa-caret-right').addClass('fa-caret-down')
+    $(this).find('.fa-folder').removeClass('fa-folder').addClass('fa-folder-open')
+    var route = $(this).closest('li').data('route')
+    $(this).closest('li').append( '<ul></ul>' )
+    folders.get(route).forEach(folder => {
+      $(this).closest('li').find('ul').append(`
+        <li data-route="${route}/${folder}">
+          <div class="folder">
+            <i class="fa-solid fa-caret-right"></i> <i class="fa-solid fa-folder"></i> ${folder}
+          </div>
+        </li>`)
+    })
+    $('.folder').unbind().on('click', folderClick)
+  }
+  else
+  {
+    $(this).find('.fa-caret-down').removeClass('fa-caret-down').addClass('fa-caret-right')
+    $(this).find('.fa-folder-open').removeClass('fa-folder-open').addClass('fa-folder')
+    $(this).closest('li').find('ul').remove()
+  }
+}
+
+folders.build()
 
   </script>
 </body>
