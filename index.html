@@ -1020,16 +1020,58 @@ function mainTagsReload(posts, ipc) {
     var copyright_tags = _tags.filter(t=>t.type==3).map(convertTagsToHtml).join('')
     var metadata_tags = _tags.filter(t=>t.type==5).map(convertTagsToHtml).join('')
     var regular_tags = _tags.filter(t=>t.type==0).map(convertTagsToHtml).join('')
-    $('.tags.placeholder-glow').hide()
-    displaySideBarAnimations() // $('.tags:not(.placeholder-glow)').show()
     artist_tags ? $('.tags.artists ul').html(artist_tags) : $('.tags.artists').hide()
     character_tags ? $('.tags.characters ul').html(character_tags) : $('.tags.characters').hide()
     copyright_tags ? $('.tags.copyright ul').html(copyright_tags) : $('.tags.copyright').hide()
     metadata_tags ? $('.tags.metadata ul').html(metadata_tags) : $('.tags.metadata').hide()
     regular_tags ? $('.tags.regular ul').html(regular_tags) : $('.tags.regular').hide()
+    $('.tags.placeholder-glow').hide()
+    displaySideBarAnimations() // $('.tags:not(.placeholder-glow)').show()
 
     $('.side .tag').on('click', sideTagClick)
   })
+}
+
+function displaySideBarAnimations() {
+  $('.tags:not(.placeholder-glow)').show()
+  $('.side .tag').addClass('animate__fadeInDown animated').show()
+  $('.folders').show()
+}
+
+function displaySideBarAnimations2() {
+  var _section = 0, _tag = 0
+  var sections = ['.artists','.characters','.copyright','.metadata','.regular']
+  $('.folders').css('visibility', 'hidden').show()
+  var interval = setInterval(function () {
+    if (_section == sections.length) {
+      clearInterval(interval)
+      setTimeout(function() {
+        $('.tags, .side .tag').removeClass('animate__fadeInRight animated')
+        $('.folders').css('visibility', 'visible').addClass('animate__fadeInRight animated')
+        setTimeout(function() {
+          $('.folders').removeClass('animate__fadeInRight animated')
+        }, 850)
+      }, 850)
+    } else {
+      var section = sections[_section]
+      var tag = $($(section).find('.tag')[_tag])
+      if (_section==0 && _tag==0 && $(section).is(':hidden')) {
+        $(section).addClass('animate__fadeInRight animated')
+        $(section).show()
+      } else if(_tag == $(section).find('.tag').length) {
+        _section++
+        _tag=0
+        section = sections[_section]
+        tag = $($(section).find('.tag')[_tag])
+        $(section).addClass('animate__fadeInRight animated')
+        $(section).show()
+      } else {
+        $(tag).addClass('animate__fadeInRight animated')
+        $(tag).show()
+        _tag++
+      }
+    }
+  }, 50);
 }
 
 function sideTagClick() {
@@ -1110,42 +1152,6 @@ function paginationFunctions() {
     }
     $('.cdp').attr('actpage', paginationPage);
   });
-}
-
-function displaySideBarAnimations() {
-  var _section = 0, _tag = 0
-  var sections = ['.artists','.characters','.copyright','.metadata','.regular']
-  $('.folders').css('visibility', 'hidden').show()
-  var interval = setInterval(function () {
-    if (_section == sections.length) {
-      clearInterval(interval)
-      setTimeout(function() {
-        $('.tags, .side .tag').removeClass('animate__fadeInRight animated')
-        $('.folders').css('visibility', 'visible').addClass('animate__fadeInRight animated')
-        setTimeout(function() {
-          $('.folders').removeClass('animate__fadeInRight animated')
-        }, 850)
-      }, 850)
-    } else {
-      var section = sections[_section]
-      var tag = $($(section).find('.tag')[_tag])
-      if (_section==0 && _tag==0 && $(section).is(':hidden')) {
-        $(section).addClass('animate__fadeInRight animated')
-        $(section).show()
-      } else if(_tag == $(section).find('.tag').length) {
-        _section++
-        _tag=0
-        section = sections[_section]
-        tag = $($(section).find('.tag')[_tag])
-        $(section).addClass('animate__fadeInRight animated')
-        $(section).show()
-      } else {
-        $(tag).addClass('animate__fadeInRight animated')
-        $(tag).show()
-        _tag++
-      }
-    }
-  }, 50);
 }
 
 function buildPost(post) {
