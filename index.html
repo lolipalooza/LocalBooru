@@ -128,6 +128,10 @@
       font-size: 12px;
       padding-right: 3px;
     }
+    .side .folders {
+      margin-top: 2rem;
+      min-height: 88vh;
+    }
     .folder {
       cursor: default;
       transition: all .25s ease;
@@ -481,7 +485,7 @@
       font-size: 1.15rem;
       margin: 2px 0;
     }
-    .post-details .tags {
+    .post-details > div {
       width: 50%;
     }
     .post-details .statistics {
@@ -1312,7 +1316,7 @@ function spotlightConfig(gallery, $this, ipc) {
             background: '#fff url(images/trees.png)',
             html: `
               <div class="post-details">
-                <div>
+                <div class="tags">
                   <h5>Artist</h5>
                   <div class="text-left">${artist_tags}</div>
                   <h5>Character</h5>
