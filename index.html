@@ -114,11 +114,26 @@
     }
     .side .folders ul {
       list-style-type: disclosure-closed;
+      list-style: none;
       padding-left: 15px;
       margin: 6px 0;
     }
+    .side .folders > ul {
+      padding-left: 0;
+    }
     .side .folders ul:not(.folders > ul) {
       margin: 0;
+    }
+    .side .folders i {
+      font-size: 12px;
+      padding-right: 3px;
+    }
+    .folder {
+      cursor: default;
+      transition: all .25s ease;
+    }
+    .folder:hover {
+      background: rgb(229 172 239 / 15%);
     }
     .gallery {
       display: flex;
@@ -688,9 +703,9 @@
         <div><strong>Folders:</strong></div>
         <ul>
           <li>
-            Monas chinas
+            <div class="folder"><i class="fa-solid fa-caret-down"></i> <i class="fa-solid fa-folder-open"></i> Monas chinas</div>
             <ul>
-              <li>a</li>
+              <li><div class="folder"><i class="fa-solid fa-caret-right"></i> <i class="fa-solid fa-folder"></i> a</div></li>
               <li>b</li>
               <li>c</li>
             </ul>
@@ -1337,8 +1352,7 @@ function spotlightConfig(gallery, $this, ipc) {
               </div>
             `,
           }).then((result) => {
-            if (result.isConfirmed)
-              $('body').unbind()
+            $('body').unbind()
           })
         })
       })
