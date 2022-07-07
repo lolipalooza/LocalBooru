@@ -93,7 +93,7 @@ function galleryRequireGelbooru(e, page, tags) {
             if (/\.(webm|mp4)$/.test(post.file_url)) {
               images.push({
                 "media": "video",
-                "src-webm": `https://img3.gelbooru.com/images/${post.directory}/${post.image}`,
+                //"src-webm": `https://img3.gelbooru.com/images/${post.directory}/${post.image}`,
                 "src-mp4": post.file_url,
                 "poster": post.preview_url,
                 "preload": true,
@@ -188,7 +188,7 @@ function galleryRequireDatabase(e, page, tags) {
       if (/\.(webm|mp4)$/.test(post.file_url)) {
         images.push({
           "media": "video",
-          "src-webm": `https://img3.gelbooru.com/images/${post.directory}/${post.image}`,
+          //"src-webm": `https://img3.gelbooru.com/images/${post.directory}/${post.image}`,
           "src-mp4": post.file_url,
           "poster": post.preview_url,
           "preload": true,
