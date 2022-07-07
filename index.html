@@ -108,7 +108,8 @@
       flex-grow: 0;
       flex-shrink: 0;
       height: calc(100vh - 68px);
-      overflow: auto;
+      overflow-y: auto;
+      overflow-x: hidden;
       margin-top: 20px;
     }
     .side .folders ul {
@@ -145,6 +146,20 @@
       list-style-type: square;
       padding-left: 15px;
       margin: 6px 0;
+      list-style-type: none;
+      padding: 0;
+    }
+    .side .tags li {
+      padding-left: 1.3em;
+    }
+    .side .tags li:before {
+      content: "\f02b";
+      display: inline-table;
+      vertical-align: top;
+      margin-left: -1.3em;
+      width: 1.3em;
+      font-family: FontAwesome;
+      color: #9b7f98;
     }
     .source-checkbox {
       /* display: flex; */
@@ -216,20 +231,20 @@
     .tag-count {
       color: #bbb;
     }
-    .tag-type-0, .tag-type-tag > a, a.tag-type-tag {color: #337ab7}
-    .tag-type-1, .tag-type-artist > a, a.tag-type-artist {color: #A00}
-    .tag-type-artist > a:hover {color: #9093FF}
-    .tag-type-4, .tag-type-character > a, a.tag-type-character  {color: #0A0}
-    .tag-type-character > a:hover {color: #9093FF}
-    .tag-type-3, .tag-type-copyright > a, a.tag-type-copyright  {color: #A0A}
-    .tag-type-copyright > a:hover {color: #9093FF}
-    .tag-type-5, .tag-type-metadata > a, a.tag-type-metadata  {color: #F80}
-    .tag-type-metadata > a:hover {color: #FA6}
-    .tag-type-deprecated > a, a.tag-type-deprecated  {
+    .tag-type-0, .tag-type-tag {color: #337ab7}
+    .tag-type-1, .tag-type-artist {color: #A00}
+    .tag-type-artist:hover {color: #9093FF}
+    .tag-type-4, .tag-type-character {color: #0A0}
+    .tag-type-character:hover {color: #9093FF}
+    .tag-type-3, .tag-type-copyright {color: #A0A}
+    .tag-type-copyright:hover {color: #9093FF}
+    .tag-type-5, .tag-type-metadata {color: #F80}
+    .tag-type-metadata:hover {color: #FA6}
+    .tag-type-deprecated {
       color: #c0c0c0 !important;
       text-decoration: line-through;
     }
-    .tag-type-deprecated > a:hover {
+    .tag-type-deprecated:hover {
       color: #c0c0c0;
       text-decoration: line-through;
     }
@@ -459,6 +474,73 @@
     .tag .count {
       color: #ababab;
     }
+    .side .tag {
+      cursor: pointer;
+      word-break: break-all;
+      display: inline-block;
+    }
+    .side .tag .count {
+      color: #9b7f98;
+    }
+    .tag {
+      transition: all .5s ease;
+    }
+    .side .tag-type-0, .side .tag-type-tag {color: #d2eaff}
+    .side .tag-type-0:hover, .side .tag-type-tag:hover {color: #485968}
+    .side .tag-type-1, .side .tag-type-artist {color: #db4b4b}
+    .side .tag-type-1:hover, .side .tag-type-artist:hover {color: #ab0707}
+    .side .tag-type-4, .side .tag-type-character {color: #1fd71f}
+    .side .tag-type-4:hover, .side .tag-type-character:hover {color: #0e660e}
+    .side .tag-type-3, .side .tag-type-copyright {color: #fb43fb}
+    .side .tag-type-3:hover, .side .tag-type-copyright:hover {color: #701d70}
+    .side .tag-type-5, .side .tag-type-metadata {color: #eeff65}
+    .side .tag-type-5:hover, .side .tag-type-metadata:hover {color: #4d5220}
+    .side2 .tag {
+      cursor: pointer;
+      position: relative;
+      margin-left: 20px;
+      padding: 0 6px 1px 12px;
+      background: #0089e0;
+      color: #fff;
+      text-decoration: none;
+      -moz-border-radius-bottomright: 4px;
+      -webkit-border-bottom-right-radius: 4px;
+      border-bottom-right-radius: 4px;
+      -moz-border-radius-topright: 4px;
+      -webkit-border-top-right-radius: 4px;
+      border-top-right-radius: 4px;
+      margin-bottom: 4px;
+      word-break: break-all;
+      max-width: fit-content;
+    }
+    .side2 .tag:before {
+      content: "";
+      float: left;
+      position: absolute;
+      top: 0px;
+      left: -10px;
+      width: 0;
+      height: 0;
+      border-color: transparent #0089e0 transparent transparent;
+      border-style: solid;
+      border-width: 9px 10px 9px 0px;
+    }
+    .side2 .tag:after {
+      content: "";
+      position: absolute;
+      top: 8px;
+      left: 0;
+      float: left;
+      width: 4px;
+      height: 4px;
+      -moz-border-radius: 2px;
+      -webkit-border-radius: 2px;
+      border-radius: 2px;
+      background: #755773;
+      /* -moz-box-shadow: -1px -1px 2px #004977; */
+      /* -webkit-box-shadow: -1px -1px 2px #004977; */
+      /* box-shadow: -1px -1px 2px #004977; */
+    }
   </style>
 </head>
 <body>
@@ -485,46 +567,119 @@
           </div>
         </label>
       </div>
-      <div class="tags">
+      <div class="tags placeholder-glow">
+        <div><span class="placeholder col-3"></span></div>
+        <ul class="placeholder-glow">
+          <li><span class="placeholder col-3"></span></li>
+        </ul>
+      </div>
+      <div class="tags placeholder-glow">
+        <div><span class="placeholder col-3"></span></div>
+        <ul class="placeholder-glow">
+          <li>
+            <span class="placeholder col-5"></span>
+            <span class="placeholder col-3"></span>
+          </li>
+          <li>
+            <span class="placeholder col-2"></span>
+            <span class="placeholder col-5"></span>
+          </li>
+          <li>
+            <span class="placeholder col-3"></span>
+            <span class="placeholder col-2"></span>
+            <span class="placeholder col-4"></span>
+          </li>
+          <li><span class="placeholder col-3"></span></li>
+          <li>
+            <span class="placeholder col-2"></span>
+            <span class="placeholder col-5"></span>
+          </li>
+        </ul>
+      </div>
+      <div class="tags placeholder-glow">
+        <div><span class="placeholder col-3"></span></div>
+        <ul class="placeholder-glow">
+          <li>
+            <span class="placeholder col-5"></span>
+            <span class="placeholder col-3"></span>
+          </li>
+          <li>
+            <span class="placeholder col-2"></span>
+            <span class="placeholder col-5"></span>
+          </li>
+          <li>
+            <span class="placeholder col-3"></span>
+            <span class="placeholder col-2"></span>
+            <span class="placeholder col-4"></span>
+          </li>
+        </ul>
+      </div>
+      <div class="tags placeholder-glow">
+        <div><span class="placeholder col-3"></span></div>
+        <ul class="placeholder-glow">
+          <li>
+            <span class="placeholder col-5"></span>
+            <span class="placeholder col-3"></span>
+          </li>
+          <li>
+            <span class="placeholder col-2"></span>
+            <span class="placeholder col-5"></span>
+          </li>
+          <li><span class="placeholder col-4"></span></li>
+          <li>
+            <span class="placeholder col-3"></span>
+            <span class="placeholder col-2"></span>
+            <span class="placeholder col-4"></span>
+          </li>
+          <li><span class="placeholder col-5"></span></li>
+          <li><span class="placeholder col-2"></span></li>
+          <li><span class="placeholder col-6"></span></li>
+          <li><span class="placeholder col-3"></span></li>
+          <li>
+            <span class="placeholder col-5"></span>
+            <span class="placeholder col-3"></span>
+          </li>
+          <li><span class="placeholder col-6"></span></li>
+          <li><span class="placeholder col-5"></span></li>
+          <li><span class="placeholder col-6"></span></li>
+          <li><span class="placeholder col-3"></span></li>
+          <li><span class="placeholder col-2"></span></li>
+          <li><span class="placeholder col-4"></span></li>
+          <li><span class="placeholder col-2"></span></li>
+          <li>
+            <span class="placeholder col-2"></span>
+            <span class="placeholder col-5"></span>
+          </li>
+          <li><span class="placeholder col-3"></span></li>
+          <li><span class="placeholder col-2"></span></li>
+          <li>
+            <span class="placeholder col-3"></span>
+            <span class="placeholder col-2"></span>
+            <span class="placeholder col-4"></span>
+          </li>
+          <li><span class="placeholder col-3"></span></li>
+          <li><span class="placeholder col-2"></span></li>
+        </ul>
+      </div>
+      <div class="tags artists">
         <div><strong>Artists:</strong></div>
-        <ul>
-          <li>artist</li>
-        </ul>
+        <ul></ul>
       </div>
-      <div class="tags">
+      <div class="tags characters">
         <div><strong>Characters:</strong></div>
-        <ul>
-          <li>satanichia kurumizawa mcdowell</li>
-          <li>jeanne d'arc (fate series)</li>
-          <li>jeanne d'arc (alter) (fate series)</li>
-          <li>hanakoganei hibari</li>
-          <li>kaname madoka</li>
-          <li>sioux province</li>
-          <li>illyasviel von einzbern (fate kaleid)</li>
-          <li>matoi ryuuko</li>
-          <li>kamado nezuko</li>
-        </ul>
+        <ul></ul>
       </div>
-      <div class="tags">
+      <div class="tags copyright">
+        <div><strong>Copyright:</strong></div>
+        <ul></ul>
+      </div>
+      <div class="tags metadata">
+        <div><strong>Copyright:</strong></div>
+        <ul></ul>
+      </div>
+      <div class="tags regular">
         <div><strong>Tags:</strong></div>
-        <ul>
-          <li>1 girl</li>
-          <li>2 girls</li>
-          <li>1 boy</li>
-          <li>blowjob</li>
-          <li>yuri</li>
-          <li>legs crossed</li>
-          <li>nude</li>
-          <li>bikini</li>
-          <li>bridal dress</li>
-          <li>high heels</li>
-          <li>implied fellatio</li>
-          <li>implied sex</li>
-          <li>sex</li>
-          <li>bukkake</li>
-          <li>loli</li>
-          <li>big breasts</li>
-        </ul>
+        <ul></ul>
       </div>
       <div class="folders">
         <div><strong>Folders:</strong></div>
@@ -580,7 +735,10 @@
   
   <script type="text/javascript">
     $(document).ready(function(){
-      const ipc = require("electron").ipcRenderer
+      const ipc = require("electron").ipcRenderer      
+
+      $('.tags.placeholder-glow').show()
+      $('.tags:not(.placeholder-glow)').hide()
 
       var settings = null
       ipc.send("settings:require")
@@ -601,6 +759,8 @@
           $('.gallery').append(buildPost(value))
         })
 
+        mainTagsReload(gallery.post, ipc)
+
         $('.gallery').append(buildPagination(gallery))
         paginationFunctions()
 
@@ -619,6 +779,8 @@
         var source = getCurrentSourceCheckboxState()
         var tags = $('.searchInput').val()
         $('.gallery').html(`<div class="loading">${loading}</div>`)
+        $('.tags.placeholder-glow').show()
+        $('.tags:not(.placeholder-glow)').hide()
         
         ipc.send("gallery:require", null, tags, source)
         ipc.once("gallery:view", galleryDefaultView)
@@ -632,6 +794,8 @@
           var tags = $(this).val()
           var source = getCurrentSourceCheckboxState()
           $('.gallery').html(`<div class="loading">${loading}</div>`)
+          $('.tags.placeholder-glow').show()
+          $('.tags:not(.placeholder-glow)').hide()
 
           ipc.send("settings:edit", 'remember_last_search', tags)
           ipc.once("settings:updated", (e) => {})
@@ -642,6 +806,7 @@
             $.each(gallery.post, function( index, value ) {
               $('.gallery').append(buildPost(value))
             })
+            mainTagsReload(gallery.post, ipc)
 
             $('.gallery').append(buildPagination(gallery))
             paginationFunctions()
@@ -713,6 +878,10 @@
           .appendTo( ul )
       }
     })
+
+Array.prototype.unique = function() {
+    return [...new Set(this)];
+}
       
 function getCurrentSourceCheckboxState () {
   return $('.source-checkbox input').is(':checked') ? 'gelbooru' : 'local'
@@ -831,6 +1000,42 @@ function clickOnPaginationButtons(e) {
   })
 }
 
+function mainTagsReload(posts, ipc) {
+  if (posts.length >= 2) {
+    ipc.send("tags:organize", posts[0].tags.split(' ').concat(posts[1].tags.split(' ')).sort().unique().join(' '))
+  } else if (posts.length == 1) {
+    ipc.send("tags:organize", posts[0].tags)
+  } else {
+    $('.tags.placeholder-glow').hide()
+    $('.tags.regular ul').html('')
+    $('.tags.regular').show()
+  }
+
+  ipc.once("tags:htmlresponse", (e, _tags) => {
+    var convertTagsToHtml = tag => `<li><span class="tag tag-type-${tag.type}" style="display:none">${tag.name} <span class="count">${tag.count}</span></span></li>`
+    var artist_tags = _tags.filter(t=>t.type==1).map(convertTagsToHtml).join('')
+    var character_tags = _tags.filter(t=>t.type==4).map(convertTagsToHtml).join('')
+    var copyright_tags = _tags.filter(t=>t.type==3).map(convertTagsToHtml).join('')
+    var metadata_tags = _tags.filter(t=>t.type==5).map(convertTagsToHtml).join('')
+    var regular_tags = _tags.filter(t=>t.type==0).map(convertTagsToHtml).join('')
+    $('.tags.placeholder-glow').hide()
+    displaySideBarAnimations() // $('.tags:not(.placeholder-glow)').show()
+    artist_tags ? $('.tags.artists ul').html(artist_tags) : $('.tags.artists').hide()
+    character_tags ? $('.tags.characters ul').html(character_tags) : $('.tags.characters').hide()
+    copyright_tags ? $('.tags.copyright ul').html(copyright_tags) : $('.tags.copyright').hide()
+    metadata_tags ? $('.tags.metadata ul').html(metadata_tags) : $('.tags.metadata').hide()
+    regular_tags ? $('.tags.regular ul').html(regular_tags) : $('.tags.regular').hide()
+
+    $('.side .tag').on('click', sideTagClick)
+  })
+}
+
+function sideTagClick() {
+  var tag = $(this).text().split(/\s+/)[0]
+  var search = $('.searchInput').val()
+  $('.searchInput').val(`${search} ${tag}`)
+}
+
 const loading = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="margin:auto;display:block;" width="200px" height="200px" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid">
 <clipPath id="cp">
   <path d="M0 -40.5 A40.5 40.5 0 0 1 0 40.5 A40.5 40.5 0 0 1 0 -40.5 M23.5 -1L23.5 1L30.5 1L30.5 -1Z"></path>
@@ -879,7 +1084,7 @@ const loading = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www
 
     function displayGalleryAnimations() {
       var next = 0
-      myInterval = setInterval(function () {
+      var myInterval = setInterval(function () {
         if (next == $('.animate-box').length) {
           clearInterval(myInterval)
         } else {
@@ -903,6 +1108,32 @@ const loading = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www
         $('.cdp').attr('actpage', paginationPage);
       });
     }
+
+function displaySideBarAnimations() {
+  var _section = 0, _tag = 0
+  var sections = ['.artists','.characters','.copyright','.metadata','.regular']
+  var interval = setInterval(function () {
+    if (_section == sections.length) {
+      clearInterval(interval)
+      $('.tags, .side .tag').removeClass('animate__fadeInLeft animated')
+    } else {
+      var section = sections[_section]
+      var tag = $($(section).find('.tag')[_tag])
+      if (_tag == $(section).find('.tag').length) {
+        _section++
+        _tag=0
+        section = sections[_section]
+        tag = $($(section).find('.tag')[_tag])
+        $(section).addClass('animate__fadeInRight animated')
+        $(section).show()
+      } else {
+        $(tag).addClass('animate__fadeInRight animated')
+        $(tag).show()
+        _tag++
+      }
+    }
+  }, 50);
+}
 
 function buildPost(post) {
   var is_video = /\.(webm|mp4)$/.test(post.file_url)
@@ -947,6 +1178,7 @@ function buildPost(post) {
           </div>`
 }
 
+// Source:  https://codepen.io/jsnanigans/full/dXAYBJ
 function buildPagination(gallery) {
   var count = gallery["@attributes"].count
   var limit = gallery["@attributes"].limit ?? 9999999
@@ -985,7 +1217,6 @@ function spotlightConfig(gallery, $this, ipc) {
     //title: 'LocalBooru Gallery',
     spinner: true,
     index: clicked_index,
-    //description: tags,
     //autoslide: true,
     //progress: false,
     onshow: function(index){ // fires when gallery opens
@@ -1044,7 +1275,6 @@ function spotlightConfig(gallery, $this, ipc) {
             has_children    = $this.closest('.animate-box').find('meta').data('has_children'),
             local_directory = $this.closest('.animate-box').find('meta').data('local_directory'),
             custom_tags     = $this.closest('.animate-box').find('meta').data('custom_tags')
-
 
         ipc.send("tags:organize", tags)
         ipc.once("tags:htmlresponse", (e, _tags) => {

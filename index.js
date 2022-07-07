@@ -362,31 +362,21 @@ ipc.on("post:edit", (e, post_id, custom_tags, local_directory) => {
 })
 
 ipc.on("tags:organize", (e, tags) => {
-  var _tags = [],
-      length = tags.split(/\s+/).length,
-      progress = 0
-  tags.split(/\s+/).forEach(tag => {
-    axios.get('https://gelbooru.com/index.php', {
-      params: {
-        page: 'dapi',
-        s: 'tag',
-        q: 'index',
-        json: 1,
-        name: tag,
-      }
-    }).then(function (response) {
-      progress++
-      var _tag = response.data.tag[0]
-      _tags.push(_tag)
-      
-      if (progress == length) {
-        _tags.sort((a,b) => (a.name > b.name) ? 1 : ((b.name > a.name) ? -1 : 0))
-        e.sender.send("tags:htmlresponse", _tags)
-      }
-    })
-    .catch(function (error) {
-      console.log(error)
-    })
+  axios.get('https://gelbooru.com/index.php', {
+    params: {
+      page: 'dapi',
+      s: 'tag',
+      q: 'index',
+      json: 1,
+      names: tags,
+    }
+  }).then(function (response) {
+    var _tags = response.data.tag
+    _tags.sort((a,b) => (a.name > b.name) ? 1 : ((b.name > a.name) ? -1 : 0))
+    e.sender.send("tags:htmlresponse", _tags)
+  })
+  .catch(function (error) {
+    console.log(error)
   })
 })
 
