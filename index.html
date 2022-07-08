@@ -124,17 +124,13 @@
     .side .folders ul:not(.folders > ul) {
       margin: 0;
     }
-    .side .folders i {
-      font-size: 12px;
-      padding-right: 3px;
-    }
     .side .folders {
       margin-top: 2rem;
       min-height: 88vh;
     }
     .folder {
       cursor: default;
-      transition: all .25s ease;
+      transition: all 1s ease;
       position: relative;
       user-select: none;
     }
@@ -145,6 +141,19 @@
       height: 100%;
       left: -1000px;
       background: rgb(229 172 239 / 15%);
+      pointer-events: none;
+    }
+    .folder .fa-circle-arrow-left {
+      color: #9b7f98;
+      cursor: pointer;
+      transition: all .5s ease;
+      display: none;
+    }
+    .folder .fa-circle-arrow-left:hover {
+      color: #543e52;
+    }
+    .folder:hover .fa-circle-arrow-left {
+      display: inline-block;
     }
     .gallery {
       display: flex;
@@ -481,6 +490,12 @@
       max-width: 90%;
       max-height: 200px;
     }
+    .details-preview span {
+      background: rgb(0 0 0 /17%);
+      background: #cfcfcf;
+      line-height: 14px;
+      padding: 1px 4px;
+    }
     .post-details h5 {
       font-size: 1.15rem;
       margin: 2px 0;
@@ -518,6 +533,33 @@
     .side .tag-type-3:hover, .side .tag-type-copyright:hover {color: #701d70}
     .side .tag-type-5, .side .tag-type-metadata {color: #eeff65}
     .side .tag-type-5:hover, .side .tag-type-metadata:hover {color: #4d5220}
+
+    .edit-post-swal .directory-placeholder {
+      background: #cfcfcf;
+      line-height: 14px;
+      padding: 1px 4px;
+      min-height: 14px;
+    }
+    .edit-post-swal .count {display:none}
+    .edit-post-swal .tag {
+      display: inline-block;
+      background: #337ab7;
+      color: white;
+      padding: 1px 5px;
+      margin: 0 2px 2px 2px;
+      border-radius: 4px;
+    }
+    .edit-post-swal .tag-type-0, .edit-post-swal .tag-type-tag {background: #337ab7}
+    .edit-post-swal .tag-type-0:hover, .edit-post-swal .tag-type-tag:hover {background: #16558b}
+    .edit-post-swal .tag-type-1, .edit-post-swal .tag-type-artist {background: #A00}
+    .edit-post-swal .tag-type-1:hover, .edit-post-swal .tag-type-artist:hover {background: #760101}
+    .edit-post-swal .tag-type-4, .edit-post-swal .tag-type-character {background: #0A0}
+    .edit-post-swal .tag-type-4:hover, .edit-post-swal .tag-type-character:hover {background: #018b01}
+    .edit-post-swal .tag-type-3, .edit-post-swal .tag-type-copyright {background: #A0A}
+    .edit-post-swal .tag-type-3:hover, .edit-post-swal .tag-type-copyright:hover {background: #7a007a}
+    .edit-post-swal .tag-type-5, .edit-post-swal .tag-type-metadata {background: #F80}
+    .edit-post-swal .tag-type-5:hover, .edit-post-swal .tag-type-metadata:hover {background: #FA6}
+
     .side2 .tag {
       cursor: pointer;
       position: relative;
@@ -912,44 +954,103 @@ function editPostDetails(e) {
     var post = localbooru_post ?? gelbooru_post
     var local_directory = post.local_directory ?? ""
     var custom_tags = post.custom_tags ?? ""
-    Swal.fire({
-      title: '<h3 class="text-left"><i class="fa-solid fa-pen-to-square"></i> Editar detalles</h3>',
-      //width: 600,
-      //padding: '3em',
-      color: '#716add',
-      background: '#fff url(images/trees.png)',
-      backdrop: `
-        rgba(0,0,123,0.4)
-        url("images/nyan-cat.gif")
-        left top
-        no-repeat
-      `,
-      html: `
-        <div class="input-group mb-3">
-          <label for="tags" class="form-label col-12 text-left">Default Tags:</label>
-          <textarea class="form-control col-12" id="tags" rows="6" placeholder="Etiquetas" disabled readonly>${post.tags}</textarea>
-        </div>
-        <div class="input-group mb-3">
-          <label for="custom-tags" class="form-label col-12 text-left">Custom Tags:</label>
-          <textarea class="form-control col-12" id="custom-tags" rows="3" placeholder="Etiquetas Personalizadas">${custom_tags??""}</textarea>
-        </div>
-        <div class="input-group mb-3">
-          <label for="local_directory" class="form-label col-12 text-left">Directorio Local:</label>
-          <input type="text" class="form-control col-12" id="local_directory" placeholder="/custom/path" value="${local_directory}">
-        </div>
-      `,
-      confirmButtonText: '<i class="fa-solid fa-heart"></i> Guardar favorito',
-      showCancelButton: true,
-      cancelButtonText: '<i class="fa-solid fa-rectangle-xmark"></i> Cancelar',
-    }).then((result) => {
-      if (result.isConfirmed) {
-        var custom_tags = $('#custom-tags').val(),
-            local_directory = $('#local_directory').val()
-        ipc.send("post:edit", post_id, custom_tags, local_directory)
-        ipc.once("post:updated", (e) => {
-          Swal.fire('¡Post guardado en favoritos!', '', 'success')
-        })
-      }
+
+    ipc.send("tags:organize", post.tags)
+    ipc.once("tags:htmlresponse", (e, _tags) => {
+      var convertTagsToHtml = tag => `<span class="tag tag-type-${tag.type}">${tag.name} <span class="count">${tag.count}</span></span>`
+      var artist_tags = _tags.filter(t=>t.type==1).map(convertTagsToHtml).join('')
+      var character_tags = _tags.filter(t=>t.type==4).map(convertTagsToHtml).join('')
+      var copyright_tags = _tags.filter(t=>t.type==3).map(convertTagsToHtml).join('')
+      var metadata_tags = _tags.filter(t=>t.type==5).map(convertTagsToHtml).join('')
+      var regular_tags = _tags.filter(t=>t.type==0).map(convertTagsToHtml).join('')
+
+      var backdrops = [
+        //'images/nyan-cat.gif',
+        'https://img3.gelbooru.com/images/03/2e/032eeb05b1aedcf2794b9632a5e55913.gif',
+        'https://img3.gelbooru.com/images/7c/34/7c3414545f58e795812e756763e4cc9b.gif',
+        'https://img3.gelbooru.com/images/ce/ed/ceedab2dc3b99509c4e7c6f75b430412.gif',
+        'https://img3.gelbooru.com/images/c8/9a/c89abfa2a17a44e16a8d642ff0fc3b42.gif',
+        'https://img3.gelbooru.com/images/d3/a4/d3a436d24fe2319e0b85e24683a6fa2b.gif',
+        'https://img3.gelbooru.com/images/df/bf/dfbfa2799d53885dbb07c7680b5dcf96.gif',
+      ]
+      var backdrop = backdrops[generateRandom(0, backdrops.length-1)]
+      var sample_url = post.sample ? `<div>sample: <span>${post.sample_url}</span></div>` : ``
+
+      folders.load('.edit-post-swal .folders ul', function (e) {
+        if (!e) e = window.event
+        e.stopPropagation()
+
+        var route = $(this).closest('li').data('route')
+        $('.directory-placeholder').text( route )
+      })
+      
+      Swal.mixin({
+        customClass: {
+          container: 'edit-post-swal'
+        }
+      }).fire({
+        //title: '<h3 class="text-left"><i class="fa-solid fa-pen-to-square"></i> Editar detalles</h3>',
+        //width: 600,
+        //padding: '3em',
+        color: '#716add',
+        background: '#fff url(images/trees.png)',
+        backdrop: `
+          rgba(0,0,123,0.4)
+          url("${backdrop}")
+          left top
+          no-repeat
+        `,
+        html: `
+              <div class="post-details">
+                <div class="tags">
+                  <h5>Artist</h5>
+                  <div class="text-left">${artist_tags}</div>
+                  <h5>Character</h5>
+                  <div class="text-left">${character_tags}</div>
+                  <h5>Copyright</h5>
+                  <div class="text-left">${copyright_tags}</div>
+                  <h5>Metadata</h5>
+                  <div class="text-left">${metadata_tags}</div>
+                  <h5>Tags</h5>
+                  <div class="text-left">${regular_tags}</div>
+                </div>
+                <div>
+                  <div class="details-preview">
+                    <img src="${post.preview_url}">
+                    <div>file: <span>${post.file_url}</span></div> ${sample_url}
+                  </div>
+                  <div class="text-left">
+                    <div class="input-group mb-3">
+                      <label for="local_directory" class="form-label col-12 text-left">Directorio Local:</label>
+                      <div class="form-label col-12 directory-placeholder">${local_directory ?? "/"}</div>
+                      <div class="folders">
+                        <div><strong>Folders:</strong></div>
+                        <div><ul></ul></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div>
+              <div class="input-group mb-3">
+                <label for="custom-tags" class="form-label col-12 text-left">Custom Tags:</label>
+                <input type="text" class="form-control col-12" id="local_directory" placeholder="Etiquetas Personalizadas" value="${custom_tags??""}">
+              </div>
+              </div>
+        `,
+        confirmButtonText: '<i class="fa-solid fa-heart"></i> Guardar favorito',
+        showCancelButton: true,
+        cancelButtonText: '<i class="fa-solid fa-rectangle-xmark"></i> Cancelar',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          var custom_tags = $('#custom-tags').val(),
+              local_directory = $('.directory-placeholder').text()
+          ipc.send("post:edit", post_id, custom_tags, local_directory)
+          ipc.once("post:updated", (e) => {
+            Swal.fire('¡Post guardado en favoritos!', '', 'success')
+          })
+        }
+      })
     })
   })
 }
@@ -1007,14 +1108,15 @@ function clickOnPaginationButtons(e) {
 }
 
 function mainTagsReload(posts, ipc) {
-  if (posts.length >= 2) {
+  if (posts && posts.length >= 2) {
     ipc.send("tags:organize", posts[0].tags.split(' ').concat(posts[1].tags.split(' ')).sort().unique().join(' '))
-  } else if (posts.length == 1) {
+  } else if (posts && posts.length == 1) {
     ipc.send("tags:organize", posts[0].tags)
   } else {
     $('.tags.placeholder-glow').hide()
     $('.tags.regular ul').html('')
     $('.tags.regular').show()
+    $('.folders').show()
   }
 
   ipc.once("tags:htmlresponse", (e, _tags) => {
@@ -1079,8 +1181,8 @@ function displaySideBarAnimations2() {
 }
 
 function sideTagClick() {
-  var tag = $(this).text().split(/\s+/)[0]
-  var search = $('.searchInput').val().split(/\s+/)
+  var tag = $(this).text().trim().split(/\s+/)[0]
+  var search = $('.searchInput').val().trim().split(/\s+/).filter(i => i!=tag)
   search.push(tag)
   $('.searchInput').val(search.join(' '))
 }
@@ -1266,40 +1368,14 @@ function spotlightConfig(gallery, $this, ipc) {
         }
       })
       properties = Spotlight.addControl("properties", function() {
-        var id              = $this.closest('.animate-box').find('meta').data('id'),
-            post_id         = $this.closest('.animate-box').find('meta').data('post_id'),
-            created_at      = $this.closest('.animate-box').find('meta').data('created_at'),
-            score           = $this.closest('.animate-box').find('meta').data('score'),
-            width           = $this.closest('.animate-box').find('meta').data('width'),
-            height          = $this.closest('.animate-box').find('meta').data('height'),
-            md5             = $this.closest('.animate-box').find('meta').data('md5'),
-            directory       = $this.closest('.animate-box').find('meta').data('directory'),
-            image           = $this.closest('.animate-box').find('meta').data('image'),
-            rating          = $this.closest('.animate-box').find('meta').data('rating'),
-            source          = $this.closest('.animate-box').find('meta').data('source'),
-            change          = $this.closest('.animate-box').find('meta').data('change'),
-            owner           = $this.closest('.animate-box').find('meta').data('owner'),
-            creator_id      = $this.closest('.animate-box').find('meta').data('creator_id'),
-            parent_id       = $this.closest('.animate-box').find('meta').data('parent_id'),
-            sample          = $this.closest('.animate-box').find('meta').data('sample'),
-            preview_height  = $this.closest('.animate-box').find('meta').data('preview_height'),
-            preview_width   = $this.closest('.animate-box').find('meta').data('preview_width'),
-            tags            = $this.closest('.animate-box').find('meta').data('tags'),
-            title           = $this.closest('.animate-box').find('meta').data('title'),
-            has_notes       = $this.closest('.animate-box').find('meta').data('has_notes'),
-            has_comments    = $this.closest('.animate-box').find('meta').data('has_comments'),
-            file_url        = $this.closest('.animate-box').find('meta').data('file_url'),
-            preview_url     = $this.closest('.animate-box').find('meta').data('preview_url'),
-            sample_url      = $this.closest('.animate-box').find('meta').data('sample_url'),
-            sample_height   = $this.closest('.animate-box').find('meta').data('sample_height'),
-            sample_width    = $this.closest('.animate-box').find('meta').data('sample_width'),
-            status          = $this.closest('.animate-box').find('meta').data('status'),
-            post_locked     = $this.closest('.animate-box').find('meta').data('post_locked'),
-            has_children    = $this.closest('.animate-box').find('meta').data('has_children'),
-            local_directory = $this.closest('.animate-box').find('meta').data('local_directory'),
-            custom_tags     = $this.closest('.animate-box').find('meta').data('custom_tags')
+        var props = ['id','post_id','created_at','score','width','height','md5','directory','image','rating','source','change','owner','creator_id','parent_id','sample','preview_height','preview_width','tags','title','has_notes','has_comments','file_url','preview_url','sample_url','sample_height','sample_width','status','post_locked','has_children','local_directory','custom_tags']
+        var post = {}
 
-        ipc.send("tags:organize", tags)
+        props.forEach(prop => {
+          post[prop] = $this.closest('.animate-box').find('meta').data(prop)
+        })
+
+        ipc.send("tags:organize", post.tags)
         ipc.once("tags:htmlresponse", (e, _tags) => {
 
           Spotlight.zoom(1)
@@ -1311,6 +1387,8 @@ function spotlightConfig(gallery, $this, ipc) {
           var copyright_tags = _tags.filter(t=>t.type==3).map(convertTagsToHtml).join('')
           var metadata_tags = _tags.filter(t=>t.type==5).map(convertTagsToHtml).join('')
           var regular_tags = _tags.filter(t=>t.type==0).map(convertTagsToHtml).join('')
+
+          var sample_url = post.sample ? `<div>sample: <span>${post.sample_url}</span></div>` : ``
 
           Swal.fire({
             background: '#fff url(images/trees.png)',
@@ -1329,28 +1407,31 @@ function spotlightConfig(gallery, $this, ipc) {
                   <div class="text-left">${regular_tags}</div>
                 </div>
                 <div>
-                  <div class="details-preview"><img src="${preview_url}"></div>
+                  <div class="details-preview">
+                    <img src="${post.preview_url}">
+                    <div>file: <span>${post.file_url}</span></div> ${sample_url}
+                  </div>
                   <div class="text-left">
                     <h5>Estadísticas</h5>
-                    <div><strong>Id:</strong> ${id}</div>
-                    <div><strong>Posted:</strong> ${created_at}</div>
-                    <div><strong>Uploader:</strong> ${owner}</div>
-                    <div><strong>Size:</strong> ${width}x${height}</div>
-                    <div><strong>Rating:</strong> ${rating}</div>
-                    <div><strong>Score:</strong> ${score}</div>
+                    <div><strong>Id:</strong> ${post.id}</div>
+                    <div><strong>Posted:</strong> ${post.created_at}</div>
+                    <div><strong>Uploader:</strong> ${post.owner}</div>
+                    <div><strong>Size:</strong> ${post.width}x${post.height}</div>
+                    <div><strong>Rating:</strong> ${post.rating}</div>
+                    <div><strong>Score:</strong> ${post.score}</div>
                   </div>
                   <div class="text-left">
                     <h5>Más información</h5>
-                    <div><strong>Md5:</strong> ${md5}</div>
-                    <div><strong>Source:</strong> ${source??'-'}</div>
-                    <div><strong>Change:</strong> ${change}</div>
-                    <div><strong>Parent:</strong> ${parent_id}</div>
-                    <div><strong>Title:</strong> ${title.trim()??'-'}</div>
-                    <div><strong>Has notes:</strong> ${has_notes?'Yes':'No'}</div>
-                    <div><strong>Has comments:</strong> ${has_comments?'Yes':'No'}</div>
-                    <div><strong>Has children:</strong> ${has_children?'Yes':'No'}</div>
-                    <div><strong>status:</strong> ${status}</div>
-                    <div><strong>Post locked:</strong> ${post_locked?'Yes':'No'}</div>
+                    <div><strong>Md5:</strong> ${post.md5}</div>
+                    <div><strong>Source:</strong> ${post.source??'-'}</div>
+                    <div><strong>Change:</strong> ${post.change}</div>
+                    <div><strong>Parent:</strong> ${post.parent_id}</div>
+                    <div><strong>Title:</strong> ${post.title.trim()??'-'}</div>
+                    <div><strong>Has notes:</strong> ${post.has_notes?'Yes':'No'}</div>
+                    <div><strong>Has comments:</strong> ${post.has_comments?'Yes':'No'}</div>
+                    <div><strong>Has children:</strong> ${post.has_children?'Yes':'No'}</div>
+                    <div><strong>status:</strong> ${post.status}</div>
+                    <div><strong>Post locked:</strong> ${post.post_locked?'Yes':'No'}</div>
                   </div>
                 </div>
               </div>
@@ -1373,27 +1454,15 @@ function spotlightConfig(gallery, $this, ipc) {
   return config
 }
 
-var folders = {
-  root: [
-    '/Monas chinas',
-    '/Monas chinas/a',
-    '/Monas chinas/b',
-    '/Monas chinas/c',
-    '/Monas chinas/a/asdf',
-    '/Monas chinas/a/kek',
-    '/Monas chinas/a/kek/foo',
-    '/Monas chinas/a/kek/bar',
-    '/Ecchi',
-    '/Ecchi/a',
-    '/Ecchi/v',
-    '/Hentai/a',
-    '/Hentai/b',
-    '/Hentai/c',
-    '/Hentai/c/blowjobs',
-    '/Hentai/c/blowjobs/cum',
-    '/Hentai/c/blowjobs/cum/bukkakes',
-  ]
+function generateRandom(min, max) {
+  let difference = max - min + 1;
+  let rand = Math.random();
+  rand = Math.floor( rand * difference);
+  rand = rand + min;
+  return rand;
 }
+
+var folders = {}
 
 folders.get = route => {
   if (!route.endsWith('/'))
@@ -1404,20 +1473,23 @@ folders.get = route => {
     .unique()
 }
 
-folders.build = () => {
-  $('.folders>ul').html('')
+folders.subfolders = (route, name) => `
+<li data-route="${route}">
+  <div class="folder">
+    <i class="fa-solid fa-caret-right"></i> <i class="fa-solid fa-folder"></i> ${name} <i class="fa-solid fa-circle-arrow-left" data-bs-toggle="tooltip" title="Seleccionar carpeta"></i>
+  </div>
+</li>`
+
+folders.build = (selector, selectFolderCallback) => {
+  $(selector).html('')
   folders.get('/').forEach(folder => {
-    $('.folders>ul').append(`
-      <li data-route="/${folder}">
-        <div class="folder">
-          <i class="fa-solid fa-caret-right"></i> <i class="fa-solid fa-folder"></i> ${folder}
-        </div>
-      </li>`)
+    $(selector).append( folders.subfolders(`/${folder}`, folder) )
   })
-  $('.folder').on('click', folderClick)
+  $('.folder').on('click', {selectFolderCallback: selectFolderCallback}, folderClick)
+  $('.fa-circle-arrow-left').on('click', selectFolderCallback)
 }
 
-function folderClick() {
+function folderClick(e) {
   if ($(this).closest('li').find('ul').length == 0)
   {
     $(this).find('.fa-caret-right').removeClass('fa-caret-right').addClass('fa-caret-down')
@@ -1425,14 +1497,10 @@ function folderClick() {
     var route = $(this).closest('li').data('route')
     $(this).closest('li').append( '<ul></ul>' )
     folders.get(route).forEach(folder => {
-      $(this).closest('li').find('ul').append(`
-        <li data-route="${route}/${folder}">
-          <div class="folder">
-            <i class="fa-solid fa-caret-right"></i> <i class="fa-solid fa-folder"></i> ${folder}
-          </div>
-        </li>`)
+      $(this).closest('li').find('ul').append( folders.subfolders(`${route}/${folder}`, folder) )
     })
-    $('.folder').unbind().on('click', folderClick)
+    $('.folder').unbind().on('click', {selectFolderCallback: e.data.selectFolderCallback}, folderClick)
+    $('.fa-circle-arrow-left').unbind().on('click', e.data.selectFolderCallback).tooltip()
   }
   else
   {
@@ -1442,7 +1510,25 @@ function folderClick() {
   }
 }
 
-folders.build()
+folders.load = (selector, selectFolderCallback) => {
+  const ipc = require("electron").ipcRenderer      
+  ipc.send("folders:require")
+  ipc.once("folders:view", (e, _folders) => {
+    folders.root = _folders
+    folders.build(selector, selectFolderCallback)
+  })
+}
+
+folders.load('.side .folders>ul', function(e) {
+  if (!e) e = window.event
+  e.stopPropagation()
+
+  var route = $(this).closest('li').data('route')
+  var encoded_route = encodeURI(route)
+  var search = $('.searchInput').val().trim().split(/\s+/).filter(tag=>/^(?!folder\:)/.test(tag))
+  search.push(`folder:${encoded_route}`)
+  $('.searchInput').val(search.join(' '))
+})
 
   </script>
 </body>

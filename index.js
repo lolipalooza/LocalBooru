@@ -62,10 +62,10 @@ ipc.on("settings:edit", (e, column, value) => {
 ipc.on("gallery:require", galleryRequire)
 
 function galleryRequire(e, page, tags, source) {
-  if (source == 'gelbooru') {
-    galleryRequireGelbooru(e, page, tags)
-  } else {
+  if (source == 'local' || /folder\:/.test(tags)) {
     galleryRequireDatabase(e, page, tags)
+  } else {
+    galleryRequireGelbooru(e, page, tags)
   }
 }
 
@@ -143,6 +143,11 @@ function galleryRequireDatabase(e, page, tags) {
         else if (/^score:/.test(tag)) {
           tag = tag.replace(/^rating:/, "")
           andQuery.push(`score ${tag}`)
+        }
+        else if (/^folder:/.test(tag)) {
+          route = tag.replace(/^folder:/, "")
+          route = decodeURIComponent(route)
+          andQuery.push(`local_directory = '${route}'`)
         }
         else if (/^sort:/.test(tag)) {
           tag = tag.replace(/^sort:/, "")
@@ -257,30 +262,33 @@ ipc.on("favorites:store", (e, post_id) => {
     var db = new sqlite3.Database(path.join(__dirname, 'localbooru.db'))
     var stored = null
 
-    db.get("SELECT * FROM posts WHERE post_id = ?", post_id, (err, row)=>{
-      var post_currently_stored = row ? true : false
-      if (post_currently_stored)
-      {
-        // remove the current post from database
-        var stmt = db.prepare('DELETE FROM posts WHERE post_id = ?')
-        stmt.run(post.id)
-        stmt.finalize(function () {stored = false})
-      }
-      else
-      {
-        // store the current post into database
-        var stmt = db.prepare(`INSERT INTO posts (post_id, created_at, score, width, height, md5, directory,
-          image, rating, source, change, owner, creator_id, parent_id, sample, preview_height, preview_width,
-          tags, title, has_notes, has_comments, file_url, preview_url, sample_url, sample_height, sample_width,
-          status, post_locked, has_children, local_directory, custom_tags)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-        stmt.run(post.id, post.created_at, post.score, post.width, post.height, post.md5, post.directory,
-          post.image, post.rating, post.source, post.change, post.owner, post.creator_id, post.parent_id,
-          post.sample, post.preview_height, post.preview_width, post.tags, post.title, post.has_notes,
-          post.has_comments, post.file_url, post.preview_url, post.sample_url, post.sample_height,
-          post.sample_width, post.status, post.post_locked, post.has_children, "/monas chinas", "")
-        stmt.finalize(function () {stored = true})
-      }
+    db.get("SELECT * FROM settings WHERE id = 1", (err, row)=>{
+      var default_save_path = row.default_save_path
+      db.get("SELECT * FROM posts WHERE post_id = ?", post_id, (err, row)=>{
+        var post_currently_stored = row ? true : false
+        if (post_currently_stored)
+        {
+          // remove the current post from database
+          var stmt = db.prepare('DELETE FROM posts WHERE post_id = ?')
+          stmt.run(post.id)
+          stmt.finalize(function () {stored = false})
+        }
+        else
+        {
+          // store the current post into database
+          var stmt = db.prepare(`INSERT INTO posts (post_id, created_at, score, width, height, md5, directory,
+            image, rating, source, change, owner, creator_id, parent_id, sample, preview_height, preview_width,
+            tags, title, has_notes, has_comments, file_url, preview_url, sample_url, sample_height, sample_width,
+            status, post_locked, has_children, local_directory, custom_tags)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+          stmt.run(post.id, post.created_at, post.score, post.width, post.height, post.md5, post.directory,
+            post.image, post.rating, post.source, post.change, post.owner, post.creator_id, post.parent_id,
+            post.sample, post.preview_height, post.preview_width, post.tags, post.title, post.has_notes,
+            post.has_comments, post.file_url, post.preview_url, post.sample_url, post.sample_height,
+            post.sample_width, post.status, post.post_locked, post.has_children, default_save_path, "")
+          stmt.finalize(function () {stored = true})
+        }
+      })
     })
     db.close(function () {
       e.sender.send("favorites:success", stored)
@@ -377,6 +385,19 @@ ipc.on("tags:organize", (e, tags) => {
   })
   .catch(function (error) {
     console.log(error)
+  })
+})
+
+ipc.on("folders:require", e => {
+  var folders = []
+  var db = new sqlite3.Database(path.join(__dirname, 'localbooru.db'))
+  db.serialize(() => {
+    db.each("SELECT DISTINCT(local_directory) as folder FROM posts", (err, row)=>{
+      folders.push(row.folder)
+    })
+  })
+  db.close(function () {
+    e.sender.send("folders:view", folders)
   })
 })
 
