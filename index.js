@@ -88,7 +88,7 @@ function galleryRequireGelbooru(e, page, tags) {
       gallery.post.forEach(post => {
         post._source = 'gelbooru'
         db.serialize(() => {
-          db.get("SELECT * FROM posts WHERE post_id = ?", post.id, (err, row)=>{
+          db.get("SELECT * FROM posts WHERE post_id = ? AND favorite=1", post.id, (err, row)=>{
             post.favorite = row ? 1 : 0
             if (/\.(webm|mp4)$/.test(post.file_url)) {
               images.push({
@@ -181,12 +181,12 @@ function galleryRequireDatabase(e, page, tags) {
         }
       })
       order_by = sort ?? "ORDER BY change DESC"
-      query = "SELECT * FROM posts WHERE "+andQuery.join(" AND ")+" "+order_by
+      query = "SELECT * FROM posts WHERE "+andQuery.join(" AND ")+" AND favorite=1 "+order_by
     } else query = "SELECT * FROM posts ORDER BY change DESC"
     db.each(query, (err, row)=>{
       var post = row
       post._source='local'
-      post.favorite = 1
+      //post.favorite = 1
       post.id = post.post_id
       delete post.post_id
       gallery.post.push(post)
@@ -327,7 +327,7 @@ ipc.on("post:require", (e, post_id) => {
   //})
 })
 
-ipc.on("post:edit", (e, post_id, custom_tags, local_directory) => {
+ipc.on("post:edit", (e, post_id, custom_tags, local_directory, favorite) => {
   axios.get('https://gelbooru.com/index.php', {
     params: {
       page: 'dapi',
@@ -346,15 +346,15 @@ ipc.on("post:edit", (e, post_id, custom_tags, local_directory) => {
       var stmt = db.prepare(`INSERT INTO posts (post_id, created_at, score, width, height, md5, directory,
         image, rating, source, change, owner, creator_id, parent_id, sample, preview_height, preview_width,
         tags, title, has_notes, has_comments, file_url, preview_url, sample_url, sample_height, sample_width,
-        status, post_locked, has_children, local_directory, custom_tags)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(post_id) DO UPDATE SET local_directory=?, custom_tags=?`)
+        status, post_locked, has_children, local_directory, custom_tags, favorite)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(post_id) DO UPDATE SET local_directory=?, custom_tags=?, favorite=?`)
       stmt.run(post_id, post.created_at, post.score, post.width, post.height, post.md5, post.directory,
         post.image, post.rating, post.source, post.change, post.owner, post.creator_id, post.parent_id,
         post.sample, post.preview_height, post.preview_width, post.tags, post.title, post.has_notes,
         post.has_comments, post.file_url, post.preview_url, post.sample_url, post.sample_height,
-        post.sample_width, post.status, post.post_locked, post.has_children, local_directory, custom_tags,
-        local_directory, custom_tags)
+        post.sample_width, post.status, post.post_locked, post.has_children, local_directory, custom_tags, favorite,
+        local_directory, custom_tags, favorite)
       stmt.finalize()
     //})
     db.close(function () {
@@ -392,7 +392,7 @@ ipc.on("folders:require", e => {
   var folders = []
   var db = new sqlite3.Database(path.join(__dirname, 'localbooru.db'))
   db.serialize(() => {
-    db.each("SELECT DISTINCT(local_directory) as folder FROM posts", (err, row)=>{
+    db.each("SELECT DISTINCT(local_directory) as folder FROM posts WHERE favorite=1", (err, row)=>{
       folders.push(row.folder)
     })
   })

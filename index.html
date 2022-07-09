@@ -21,6 +21,7 @@
     /* width */
     ::-webkit-scrollbar {
       width: 6px;
+      height: 6px;
     }
 
     /* Track */
@@ -174,6 +175,24 @@
       max-width: 175px;
       max-height: 175px;
     }
+    .animate-box.empty {
+      width: 100% !important;
+      display: block !important;
+      font-size: 1rem;
+      font-style: italic;
+    }
+    .animate-box.empty>div {
+      padding: 0 15px;
+    }
+    .animate-box.empty img {
+      width: 80%;
+      max-width: fit-content;
+      max-height: fit-content;
+      margin: auto;
+      display: block;
+      box-shadow: 0 4px 16px 5px rgb(0 0 0 / 45%);
+      margin-top: 30px;
+    }
     .side > * {
       margin-top: 20px;
     }
@@ -309,7 +328,7 @@
       .pagination-trigger {
         width: 100% !important;
       }
-      .gallery > div:not(.loading):not(.pagination-trigger) {
+      .gallery > div:not(.loading):not(.pagination-trigger):not(.empty) {
         width: 32vw !important;
         min-width: unset;
         margin-top: unset !important;
@@ -325,6 +344,11 @@
       .searchBox {
         margin: 0 8px;
         width: calc(100% - 8px * 2 * 2);
+      }
+    }
+    @media (min-width: 950px) {
+      .animate-box.empty img {
+        max-width: 600px;
       }
     }
     @-webkit-keyframes fadeInUp {
@@ -539,6 +563,8 @@
       line-height: 14px;
       padding: 1px 4px;
       min-height: 14px;
+      border: 0;
+      font-size: 10px;
     }
     .edit-post-swal .count {display:none}
     .edit-post-swal .tag {
@@ -559,6 +585,33 @@
     .edit-post-swal .tag-type-3:hover, .edit-post-swal .tag-type-copyright:hover {background: #7a007a}
     .edit-post-swal .tag-type-5, .edit-post-swal .tag-type-metadata {background: #F80}
     .edit-post-swal .tag-type-5:hover, .edit-post-swal .tag-type-metadata:hover {background: #FA6}
+    .edit-post-swal .tag-type-7, .edit-post-swal .tag-type-custom {background: #add534}
+    .edit-post-swal .tag-type-7:hover, .edit-post-swal .tag-type-custom:hover {background: #759907}
+
+    .edit-post-swal .tag-type-7, .edit-post-swal .tag-type-custom {
+      display: block;
+      width: fit-content;
+    }
+    
+    .edit-post-swal .folders {
+      width: 100%;
+    }
+    .edit-post-swal .folders > ul {
+      padding: 3px 6px;
+      border: 1px solid #7066e0;
+      height: 125px;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    .edit-post-swal .folders ul {
+      background: #fff;
+      list-style: none;
+      margin: 0;
+      padding-left: 10px;
+    }
+    .post-edit-details {
+      font-size: 10px;
+    }
 
     .side2 .tag {
       cursor: pointer;
@@ -803,9 +856,12 @@
 
       function galleryDefaultView(e, gallery, images) {
         $('.gallery').html('')
-        $.each(gallery.post, function( index, value ) {
-          $('.gallery').append(buildPost(value))
-        })
+
+        if (gallery.post.length > 0)
+          $.each(gallery.post, function( index, value ) {
+            $('.gallery').append(buildPost(value))
+          })
+        else $('.gallery').html(buildEmptyGallery())
 
         mainTagsReload(gallery.post, ipc)
 
@@ -816,8 +872,7 @@
           Spotlight.show(images, spotlightConfig(images, $(this), ipc))
           $('#spotlight').unbind().on('mouseleave', function (){Spotlight.menu(true)})
         })
-        $('.fa-pen-to-square').on('click', {ipc: ipc}, editPostDetails)
-        $('.fa-heart').on('click', {ipc: ipc}, addPostToFavourites)
+        $('.fa-heart').on('click', {ipc: ipc}, editPostDetails)
         $('[data-bs-toggle=tooltip]').tooltip()
         displayGalleryAnimations()
         $('.content_detail__pagination a').on('click', {ipc: ipc}, clickOnPaginationButtons)
@@ -851,9 +906,11 @@
           ipc.send("gallery:require", null, tags, source)
           ipc.once("gallery:view", (e, gallery, images) => {
             $('.gallery').html('')
-            $.each(gallery.post, function( index, value ) {
-              $('.gallery').append(buildPost(value))
-            })
+            if (gallery.post.length > 0)
+              $.each(gallery.post, function( index, value ) {
+                $('.gallery').append(buildPost(value))
+              })
+            else $('.gallery').html(buildEmptyGallery())
             mainTagsReload(gallery.post, ipc)
 
             $('.gallery').append(buildPagination(gallery))
@@ -862,8 +919,7 @@
             $('.card__image').before().on('click', function() {
               Spotlight.show(images, spotlightConfig(images, $(this), ipc))
             })
-            $('.fa-pen-to-square').on('click', {ipc: ipc}, editPostDetails)
-            $('.fa-heart').on('click', {ipc: ipc}, addPostToFavourites)
+            $('.fa-heart').on('click', {ipc: ipc}, editPostDetails)
             $('[data-bs-toggle=tooltip]').tooltip()
             displayGalleryAnimations()
             $('.content_detail__pagination a').on('click', {ipc: ipc}, clickOnPaginationButtons)
@@ -952,7 +1008,7 @@ function editPostDetails(e) {
   ipc.send("post:require", post_id)
   ipc.once("post:response", (e, gelbooru_post, localbooru_post) => {
     var post = localbooru_post ?? gelbooru_post
-    var local_directory = post.local_directory ?? ""
+    var local_directory = post.local_directory ?? "/"
     var custom_tags = post.custom_tags ?? ""
 
     ipc.send("tags:organize", post.tags)
@@ -981,8 +1037,18 @@ function editPostDetails(e) {
         e.stopPropagation()
 
         var route = $(this).closest('li').data('route')
-        $('.directory-placeholder').text( route )
+        $('.directory-placeholder').val( route )
       })
+
+      var getCustomTagsField = value => {
+        var html = ""
+        if (value) {
+          value.split(/\s+/).forEach(tag => {
+            html += `<span class="tag tag-type-7">${tag}</span>`
+          })
+        }
+        return html
+      }
       
       Swal.mixin({
         customClass: {
@@ -1013,6 +1079,8 @@ function editPostDetails(e) {
                   <div class="text-left">${metadata_tags}</div>
                   <h5>Tags</h5>
                   <div class="text-left">${regular_tags}</div>
+                  <h5>Custom Tags</h5>
+                  <div class="text-left custom-tags">${getCustomTagsField(custom_tags)}</div>
                 </div>
                 <div>
                   <div class="details-preview">
@@ -1020,60 +1088,79 @@ function editPostDetails(e) {
                     <div>file: <span>${post.file_url}</span></div> ${sample_url}
                   </div>
                   <div class="text-left">
-                    <div class="input-group mb-3">
-                      <label for="local_directory" class="form-label col-12 text-left">Directorio Local:</label>
-                      <div class="form-label col-12 directory-placeholder">${local_directory ?? "/"}</div>
-                      <div class="folders">
-                        <div><strong>Folders:</strong></div>
-                        <div><ul></ul></div>
-                      </div>
-                    </div>
+                    <h5>Estadísticas</h5>
+                    <div><strong>Id:</strong> ${post.id}</div>
+                    <div><strong>Posted:</strong> ${post.created_at}</div>
+                    <div><strong>Uploader:</strong> ${post.owner}</div>
+                    <div><strong>Size:</strong> ${post.width}x${post.height}</div>
+                    <div><strong>Rating:</strong> ${post.rating}</div>
+                    <div><strong>Score:</strong> ${post.score}</div>
+                  </div>
+                  <div class="text-left">
+                    <h5>Más información</h5>
+                    <div><strong>Md5:</strong> ${post.md5}</div>
+                    <div><strong>Source:</strong> ${post.source??'-'}</div>
+                    <div><strong>Change:</strong> ${post.change}</div>
+                    <div><strong>Parent:</strong> ${post.parent_id}</div>
+                    <div><strong>Title:</strong> ${post.title.trim()??'-'}</div>
+                    <div><strong>Has notes:</strong> ${post.has_notes?'Yes':'No'}</div>
+                    <div><strong>Has comments:</strong> ${post.has_comments?'Yes':'No'}</div>
+                    <div><strong>Has children:</strong> ${post.has_children?'Yes':'No'}</div>
+                    <div><strong>status:</strong> ${post.status}</div>
+                    <div><strong>Post locked:</strong> ${post.post_locked?'Yes':'No'}</div>
+                  </div>
+                  <div class="text-left">
                   </div>
                 </div>
               </div>
-              <div>
-              <div class="input-group mb-3">
-                <label for="custom-tags" class="form-label col-12 text-left">Custom Tags:</label>
-                <input type="text" class="form-control col-12" id="local_directory" placeholder="Etiquetas Personalizadas" value="${custom_tags??""}">
-              </div>
+              <div class="post-edit-details text-left">
+                <h5>Detalles para editar</h5>
+                <div class="input-group mb-3">
+                  <label for="custom-tags" class="form-label col-12 text-left">Custom Tags:</label>
+                  <input type="text" class="form-control col-12" id="custom-tags" placeholder="Etiquetas Personalizadas" value="${custom_tags??""}">
+                </div>
+                <div class="input-group mb-3">
+                  <label for="local_directory" class="form-label col-12 text-left">Directorio Local:</label>
+                  <input class="form-label col-12 directory-placeholder" id="local_directory" placeholder="/" value="${local_directory}">
+                  <div class="folders">
+                    <div><strong>Folders:</strong></div>
+                    <ul></ul>
+                  </div>
+                </div>
               </div>
         `,
+        didOpen: () => {
+          $('#custom-tags').on('input', function() {
+            $(this).closest('.swal2-html-container').find('.custom-tags').html("")
+            $('.edit-post-swal .custom-tags').append(getCustomTagsField($(this).val().trim()))
+          })
+        },
+        showConfirmButton: true,
         confirmButtonText: '<i class="fa-solid fa-heart"></i> Guardar favorito',
         showCancelButton: true,
         cancelButtonText: '<i class="fa-solid fa-rectangle-xmark"></i> Cancelar',
+        showDenyButton: post.favorite?true:false,
+        denyButtonText: `<i class="fa-solid fa-heart-crack"></i> Quitar de favoritos`,
       }).then((result) => {
+        var custom_tags = $('#custom-tags').val(),
+            local_directory = $('.directory-placeholder').val()
         if (result.isConfirmed) {
-          var custom_tags = $('#custom-tags').val(),
-              local_directory = $('.directory-placeholder').text()
-          ipc.send("post:edit", post_id, custom_tags, local_directory)
+          ipc.send("post:edit", post_id, custom_tags, local_directory, 1)
           ipc.once("post:updated", (e) => {
             Swal.fire('¡Post guardado en favoritos!', '', 'success')
+            folders.load('.side .folders>ul', selectFolder)
+            $(this).tooltip('dispose').removeClass('fa-regular').addClass('fa-solid').attr('title', 'Editar favorito').tooltip()
+          })
+        } else if (result.isDenied) {
+          ipc.send("post:edit", post_id, custom_tags, local_directory, 0)
+          ipc.once("post:updated", (e) => {
+            Swal.fire('Post removido de favoritos', 'El post fue removido de favoritos pero toda su información adicional sigue almancenada en la base de datos.', 'info')
+            folders.load('.side .folders>ul', selectFolder)
+            $(this).tooltip('dispose').removeClass('fa-solid').addClass('fa-regular').attr('title', 'Agregar a favoritos').tooltip()
           })
         }
       })
     })
-  })
-}
-
-function addPostToFavourites(e) {
-  // avoid the click on image interfiere with this
-  if (!e) e = window.event
-  e.stopPropagation()
-
-  var ipc = e.data.ipc
-  var post_id = $(this).closest('.animate-box').find('meta').data('id')
-  ipc.send("favorites:store", post_id)
-  ipc.once("favorites:success", (e, stored) => {
-    if (stored) {
-      $(this).tooltip('dispose').removeClass('fa-regular').addClass('fa-solid').attr('title', 'Quitar de favoritos').tooltip('show')
-    } else {
-      $(this).tooltip('dispose').removeClass('fa-solid').addClass('fa-regular').attr('title', 'Agregar a favoritos').tooltip('show')
-    }
-
-    //$(this).addClass('update-effect')
-    //$(this)
-    //  .off('mouseout', function () {$(this).removeClass('update-effect')})
-    //  .on('mouseout', function () {$(this).removeClass('update-effect')})
   })
 }
 
@@ -1099,8 +1186,7 @@ function clickOnPaginationButtons(e) {
     $('.card__image').before().on('click', function() {
       Spotlight.show(images, spotlightConfig(images, $(this), ipc))
     })
-    $('.fa-pen-to-square').on('click', {ipc: ipc}, editPostDetails)
-    $('.fa-heart').on('click', {ipc: ipc}, addPostToFavourites)
+    $('.fa-heart').on('click', {ipc: ipc}, editPostDetails)
     $('[data-bs-toggle=tooltip]').tooltip()
 
     displayGalleryAnimations()
@@ -1184,7 +1270,7 @@ function sideTagClick() {
   var tag = $(this).text().trim().split(/\s+/)[0]
   var search = $('.searchInput').val().trim().split(/\s+/).filter(i => i!=tag)
   search.push(tag)
-  $('.searchInput').val(search.join(' '))
+  $('.searchInput').val(search.join(' ')).focus()
 }
 
 const loading = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="margin:auto;display:block;" width="200px" height="200px" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid">
@@ -1294,13 +1380,23 @@ function buildPost(post) {
               <div class="card__content">
                 ${post_icon_html}
                 <div class="card-icons">
-                  <i class="fa-solid fa-pen-to-square" data-bs-toggle="tooltip" title="Editar detalles"></i>
-                  ${favorite_btn}
+                  <!--<i class="fa-solid fa-pen-to-square" data-bs-toggle="tooltip" title="Editar detalles"></i>-->
+                  <i class="fa-regular ${post.favorite?'fa-solid fa-heart':'fa-regular fa-heart'}" data-bs-toggle="tooltip" title="${post.favorite?'Editar favorito':'Agregar a favoritos'}"></i>
+                  <!--${favorite_btn}-->
                 </div>
               </div>
             </div>
             <meta data-id="${post.id}" data-created_at="${post.created_at}" data-score="${post.score}" data-width="${post.width}" data-height="${post.height}" data-md5="${post.md5}" data-directory="${post.directory}" data-image="${post.image}" data-rating="${post.rating}" data-source="${post.source}" data-change="${post.change}" data-owner="${post.owner}" data-creator_id="${post.creator_id}" data-parent_id="${post.parent_id}" data-sample="${post.sample}" data-preview_height="${post.preview_height}" data-preview_width="${post.preview_width}" data-tags="${post.tags}" data-title="${post.title}" data-has_notes="${post.has_notes}" data-has_comments="${post.has_comments}" data-file_url="${post.file_url}" data-preview_url="${post.preview_url}" data-sample_url="${post.sample_url}" data-sample_height="${post.sample_height}" data-sample_width="${post.sample_width}" data-status="${post.status}" data-post_locked="${post.post_locked}" data-has_children="${post.has_children}" data-local_directory="${post.local_directory}" data-custom_tags="${post.custom_tags}" />
           </div>`
+}
+
+function buildEmptyGallery() {
+  var banners = [
+    'images/cd4Y1C1g.jpg',
+    'images/i-cant-understand-what-my-husband-is-saying-danna-ga-nani-o-itteiru-ka-wakaranai-ken-kaoru-hajime.jpg',
+  ]
+  var banner = banners[generateRandom(0, banners.length-1)]
+  return `<div class="animate-box empty fadeInUp animated"><div>No ha sido encontrado ningún post que coincida con el criterio de búsqueda.</div><img src="${banner}"></div>`
 }
 
 // Source:  https://codepen.io/jsnanigans/full/dXAYBJ
@@ -1485,8 +1581,8 @@ folders.build = (selector, selectFolderCallback) => {
   folders.get('/').forEach(folder => {
     $(selector).append( folders.subfolders(`/${folder}`, folder) )
   })
-  $('.folder').on('click', {selectFolderCallback: selectFolderCallback}, folderClick)
-  $('.fa-circle-arrow-left').on('click', selectFolderCallback)
+  $(selector).find('.folder').on('click', {selectFolderCallback: selectFolderCallback}, folderClick)
+  $(selector).find('.fa-circle-arrow-left').on('click', selectFolderCallback)
 }
 
 function folderClick(e) {
@@ -1499,8 +1595,8 @@ function folderClick(e) {
     folders.get(route).forEach(folder => {
       $(this).closest('li').find('ul').append( folders.subfolders(`${route}/${folder}`, folder) )
     })
-    $('.folder').unbind().on('click', {selectFolderCallback: e.data.selectFolderCallback}, folderClick)
-    $('.fa-circle-arrow-left').unbind().on('click', e.data.selectFolderCallback).tooltip()
+    $(this).closest('.folders').find('.folder').unbind().on('click', {selectFolderCallback: e.data.selectFolderCallback}, folderClick)
+    $(this).closest('.folders').find('.fa-circle-arrow-left').unbind().on('click', e.data.selectFolderCallback).tooltip()
   }
   else
   {
@@ -1519,7 +1615,7 @@ folders.load = (selector, selectFolderCallback) => {
   })
 }
 
-folders.load('.side .folders>ul', function(e) {
+function selectFolder(e) {
   if (!e) e = window.event
   e.stopPropagation()
 
@@ -1527,8 +1623,10 @@ folders.load('.side .folders>ul', function(e) {
   var encoded_route = encodeURI(route)
   var search = $('.searchInput').val().trim().split(/\s+/).filter(tag=>/^(?!folder\:)/.test(tag))
   search.push(`folder:${encoded_route}`)
-  $('.searchInput').val(search.join(' '))
-})
+  $('.searchInput').val(search.join(' ')).focus()
+}
+
+folders.load('.side .folders>ul', selectFolder)
 
   </script>
 </body>
