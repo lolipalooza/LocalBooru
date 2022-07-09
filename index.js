@@ -441,7 +441,6 @@ ipc.on("custom-tags:reload", (e, custom_tags) => {
 
 /*
  * Next:
- * - bug: paginator interfieres with favorite button on bottom images
  * - Folders search must show all files inside the folder and all subfolders inside
  * - Custom tags searchable from "gelbooru"
  * - auto focus in custom tags input on edit favorite
