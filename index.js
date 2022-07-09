@@ -460,5 +460,6 @@ ipc.on("custom-tags:reload", (e, custom_tags) => {
  * Next:
  * - auto focus in custom tags input on edit favorite
  * - add favorite functionality on spotlight gallery
+ * - add loading animated icons for certain long processes (add to favourited / save or remove favorite / view details)
  * - Icon with settings / Help / About
  */
