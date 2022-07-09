@@ -59,15 +59,20 @@ ipc.on("settings:edit", (e, column, value) => {
   })
 })
 
-ipc.on("gallery:require", galleryRequire)
-
-function galleryRequire(e, page, tags, source) {
-  if (source == 'local' || /folder\:/.test(tags)) {
-    galleryRequireDatabase(e, page, tags)
-  } else {
-    galleryRequireGelbooru(e, page, tags)
+ipc.on("gallery:require", (e, page, tags, source) => {
+  if (source == 'local')
+  {
+    e.sender.send("gallery:view", {'@attributes': {count: 0}}, [])
   }
-}
+  else if (source == 'gelbooru')
+  {
+    if (/folder\:/.test(tags) || (/^_/.test(tags))) {
+      galleryRequireDatabase(e, page, tags)
+    } else {
+      galleryRequireGelbooru(e, page, tags)
+    }
+  }
+})
 
 function galleryRequireGelbooru(e, page, tags) {
   axios.get('https://gelbooru.com/index.php', {
@@ -87,6 +92,7 @@ function galleryRequireGelbooru(e, page, tags) {
     if (gallery.post) {
       gallery.post.forEach(post => {
         post._source = 'gelbooru'
+        post.created_at = Math.floor(new Date(post.created_at).getTime()/1000)
         db.serialize(() => {
           db.get("SELECT * FROM posts WHERE post_id = ? AND favorite=1", post.id, (err, row)=>{
             post.favorite = row ? 1 : 0
@@ -134,6 +140,8 @@ function galleryRequireDatabase(e, page, tags) {
         if (/^-/.test(tag)) {
           tag = tag.replace(/^-/, "")
           inverted = true
+        } else if (/^_/.test(tag)) {
+          tag = tag.replace(/^_/, "")
         }
 
         if (/^rating:/.test(tag)) {
@@ -192,10 +200,11 @@ function galleryRequireDatabase(e, page, tags) {
     } else query = "SELECT * FROM posts ORDER BY change DESC"
     db.each(query, (err, row)=>{
       var post = row
-      post._source='local'
+      post._source='gelbooru'
       //post.favorite = 1
       post.id = post.post_id
       delete post.post_id
+      post.created_at = Math.floor(new Date(post.created_at).getTime()/1000)
       gallery.post.push(post)
       if (/\.(webm|mp4)$/.test(post.file_url)) {
         images.push({
@@ -449,7 +458,6 @@ ipc.on("custom-tags:reload", (e, custom_tags) => {
 
 /*
  * Next:
- * - Custom tags searchable from "gelbooru"
  * - auto focus in custom tags input on edit favorite
  * - add favorite functionality on spotlight gallery
  * - Icon with settings / Help / About

@@ -844,6 +844,7 @@
   <script src="node_modules/sweetalert2/dist/sweetalert2.min.js"></script>
   
   <script type="text/javascript">
+    var debug
     $(document).ready(function(){
       const ipc = require("electron").ipcRenderer      
 
@@ -903,7 +904,7 @@
 
       $('.searchInput').on("keypress", function(e) {
         if (e.which==13) {
-          var tags = $(this).val()
+          var tags = $(this).val().trim()
           var source = getCurrentSourceCheckboxState()
           $('.gallery').html(`<div class="loading">${loading}</div>`)
           $('.tags.placeholder-glow').show()
@@ -1247,7 +1248,8 @@ function displaySideBarAnimations() {
 }
 
 function sideTagClick() {
-  var tag = $(this).text().trim().split(/\s+/)[0]
+  var prefix = $(this).hasClass('tag-type-7') ? '_' : ''
+  var tag = prefix + $(this).text().trim().split(/\s+/)[0]
   var search = $('.searchInput').val().trim().split(/\s+/).filter(i => i!=tag)
   search.push(tag)
   $('.searchInput').val(search.join(' ')).focus()
