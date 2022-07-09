@@ -147,7 +147,7 @@ function galleryRequireDatabase(e, page, tags) {
         else if (/^folder:/.test(tag)) {
           route = tag.replace(/^folder:/, "")
           route = decodeURIComponent(route)
-          andQuery.push(`local_directory = '${route}'`)
+          andQuery.push(`local_directory='${route}'`)
         }
         else if (/^sort:/.test(tag)) {
           tag = tag.replace(/^sort:/, "")
@@ -170,14 +170,14 @@ function galleryRequireDatabase(e, page, tags) {
         else if (/{[^\s]+(\s+~\s+[^\s]+)+}/.test(tag)) {
           var orQuery = []
           tag.replace(/[{}~]/g, "").split(/\s+/).forEach(orTag => {
-            orQuery.push(`(tags LIKE '${orTag} %' OR tags LIKE '% ${orTag} %' OR tags LIKE '% ${orTag}')`)
+            orQuery.push(`(custom_tags='${tag}' OR tags||' '||custom_tags LIKE '${orTag} %' OR tags||' '||custom_tags LIKE '% ${orTag} %' OR tags||' '||custom_tags LIKE '% ${orTag}')`)
           })
           andQuery.push("("+orQuery.join(" OR ")+")")
         }
         else if (inverted) {
-          andQuery.push(`(tags NOT LIKE '${tag} %' AND tags NOT LIKE '% ${tag} %' AND tags NOT LIKE '% ${tag}')`)
+          andQuery.push(`(custom_tags<>'${tag}' AND tags||' '||custom_tags NOT LIKE '${tag} %' AND tags||' '||custom_tags NOT LIKE '% ${tag} %' AND tags||' '||custom_tags NOT LIKE '% ${tag}')`)
         } else {
-          andQuery.push(`(tags LIKE '${tag} %' OR tags LIKE '% ${tag} %' OR tags LIKE '% ${tag}')`)
+          andQuery.push(`(custom_tags='${tag}' OR tags||' '||custom_tags LIKE '${tag} %' OR tags||' '||custom_tags LIKE '% ${tag} %' OR tags||' '||custom_tags LIKE '% ${tag}')`)
         }
       })
       order_by = sort ?? "ORDER BY change DESC"
@@ -340,23 +340,28 @@ ipc.on("post:edit", (e, post_id, custom_tags, local_directory, favorite) => {
     const post = response.data.post[0]
     var db = new sqlite3.Database(path.join(__dirname, 'localbooru.db'))
     
-    //db.get("SELECT * FROM posts WHERE post_id = ?", post_id, (err, row)=>{
-      //post = row
-      // store the current post into database
-      var stmt = db.prepare(`INSERT INTO posts (post_id, created_at, score, width, height, md5, directory,
-        image, rating, source, change, owner, creator_id, parent_id, sample, preview_height, preview_width,
-        tags, title, has_notes, has_comments, file_url, preview_url, sample_url, sample_height, sample_width,
-        status, post_locked, has_children, local_directory, custom_tags, favorite)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(post_id) DO UPDATE SET local_directory=?, custom_tags=?, favorite=?`)
-      stmt.run(post_id, post.created_at, post.score, post.width, post.height, post.md5, post.directory,
-        post.image, post.rating, post.source, post.change, post.owner, post.creator_id, post.parent_id,
-        post.sample, post.preview_height, post.preview_width, post.tags, post.title, post.has_notes,
-        post.has_comments, post.file_url, post.preview_url, post.sample_url, post.sample_height,
-        post.sample_width, post.status, post.post_locked, post.has_children, local_directory, custom_tags, favorite,
-        local_directory, custom_tags, favorite)
-      stmt.finalize()
-    //})
+    var stmt = db.prepare(`INSERT INTO posts (post_id, created_at, score, width, height, md5, directory,
+      image, rating, source, change, owner, creator_id, parent_id, sample, preview_height, preview_width,
+      tags, title, has_notes, has_comments, file_url, preview_url, sample_url, sample_height, sample_width,
+      status, post_locked, has_children, local_directory, custom_tags, favorite)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(post_id) DO UPDATE SET local_directory=?, custom_tags=?, favorite=?`)
+    stmt.run(post_id, post.created_at, post.score, post.width, post.height, post.md5, post.directory,
+      post.image, post.rating, post.source, post.change, post.owner, post.creator_id, post.parent_id,
+      post.sample, post.preview_height, post.preview_width, post.tags, post.title, post.has_notes,
+      post.has_comments, post.file_url, post.preview_url, post.sample_url, post.sample_height,
+      post.sample_width, post.status, post.post_locked, post.has_children, local_directory, custom_tags, favorite,
+      local_directory, custom_tags, favorite)
+    stmt.finalize()
+
+    custom_tags.split(/\s+/).forEach(tag => {
+      if (tag) {
+        var stmt = db.prepare(`INSERT OR IGNORE INTO tags (name, type) VALUES (?, ?)`)
+        stmt.run(tag, 7)
+        stmt.finalize()
+      }
+    })
+
     db.close(function () {
       e.sender.send("post:updated")
     })
@@ -381,7 +386,21 @@ ipc.on("tags:organize", (e, tags) => {
   }).then(function (response) {
     var _tags = response.data.tag
     _tags.sort((a,b) => (a.name > b.name) ? 1 : ((b.name > a.name) ? -1 : 0))
-    e.sender.send("tags:htmlresponse", _tags)
+    var custom_tags = []
+
+    var db = new sqlite3.Database(path.join(__dirname, 'localbooru.db'))
+    db.serialize(() => {
+      var sql = `SELECT id, name, (
+        SELECT COUNT(0) FROM posts WHERE (custom_tags=name OR custom_tags LIKE name||' %'
+          OR custom_tags LIKE '% '||name||' %' OR custom_tags LIKE '% '||name)
+      ) AS count, type, '0' AS ambiguous FROM tags`
+      db.each(sql, (err, row)=>{
+        custom_tags.push(row)
+      })
+    })
+    db.close(function () {
+      e.sender.send("tags:htmlresponse", _tags.concat(custom_tags))
+    })
   })
   .catch(function (error) {
     console.log(error)
@@ -398,6 +417,25 @@ ipc.on("folders:require", e => {
   })
   db.close(function () {
     e.sender.send("folders:view", folders)
+  })
+})
+
+ipc.on("custom-tags:reload", (e, custom_tags) => {
+  var db = new sqlite3.Database(path.join(__dirname, 'localbooru.db'))
+  db.each("SELECT * FROM tags WHERE type=7", (err, row)=>{
+    var tag = row.name
+    var sql = `SELECT * FROM posts
+      WHERE (custom_tags='${tag}' OR custom_tags LIKE '${tag} %' OR custom_tags LIKE '% ${tag} %' OR custom_tags LIKE '% ${tag}') LIMIT 1`
+    db.get(sql, (err, row)=>{
+      if (!row) {
+        var stmt = db.prepare(`DELETE FROM tags WHERE name=?`)
+        stmt.run(tag)
+        stmt.finalize()
+      }
+    })
+  })
+  db.close(function () {
+    e.sender.send("custom-tags:updated")
   })
 })
 

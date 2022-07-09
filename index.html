@@ -557,6 +557,8 @@
     .side .tag-type-3:hover, .side .tag-type-copyright:hover {color: #701d70}
     .side .tag-type-5, .side .tag-type-metadata {color: #eeff65}
     .side .tag-type-5:hover, .side .tag-type-metadata:hover {color: #4d5220}
+    .side .tag-type-7, .side .tag-type-custom {color: #ffbc00}
+    .side .tag-type-7:hover, .side .tag-type-custom:hover {color: #a57900}
 
     .edit-post-swal .directory-placeholder {
       background: #cfcfcf;
@@ -799,6 +801,10 @@
         <div><strong>Tags:</strong></div>
         <ul></ul>
       </div>
+      <div class="tags custom-tags">
+        <div><strong>Custom Tags:</strong></div>
+        <ul></ul>
+      </div>
       <div class="folders">
         <div><strong>Folders:</strong></div>
         <ul>
@@ -857,7 +863,7 @@
       function galleryDefaultView(e, gallery, images) {
         $('.gallery').html('')
 
-        if (gallery.post.length > 0)
+        if (gallery["@attributes"].count > 0)
           $.each(gallery.post, function( index, value ) {
             $('.gallery').append(buildPost(value))
           })
@@ -906,7 +912,7 @@
           ipc.send("gallery:require", null, tags, source)
           ipc.once("gallery:view", (e, gallery, images) => {
             $('.gallery').html('')
-            if (gallery.post.length > 0)
+            if (gallery["@attributes"].count > 0)
               $.each(gallery.post, function( index, value ) {
                 $('.gallery').append(buildPost(value))
               })
@@ -1152,12 +1158,17 @@ function editPostDetails(e) {
             $(this).tooltip('dispose').removeClass('fa-regular').addClass('fa-solid').attr('title', 'Editar favorito').tooltip()
           })
         } else if (result.isDenied) {
-          ipc.send("post:edit", post_id, custom_tags, local_directory, 0)
+          ipc.send("post:edit", post_id, custom_tags.trim(), local_directory.trim(), 0)
           ipc.once("post:updated", (e) => {
             Swal.fire('Post removido de favoritos', 'El post fue removido de favoritos pero toda su información adicional sigue almancenada en la base de datos.', 'info')
             folders.load('.side .folders>ul', selectFolder)
             $(this).tooltip('dispose').removeClass('fa-solid').addClass('fa-regular').attr('title', 'Agregar a favoritos').tooltip()
           })
+        }
+
+        if(result.isConfirmed || result.isDenied) {
+          ipc.send("custom-tags:reload", custom_tags.trim())
+          ipc.once("custom-tags:updated", (e) => {})
         }
       })
     })
@@ -1212,11 +1223,13 @@ function mainTagsReload(posts, ipc) {
     var copyright_tags = _tags.filter(t=>t.type==3).map(convertTagsToHtml).join('')
     var metadata_tags = _tags.filter(t=>t.type==5).map(convertTagsToHtml).join('')
     var regular_tags = _tags.filter(t=>t.type==0).map(convertTagsToHtml).join('')
+    var custom_tags = _tags.filter(t=>t.type==7).map(convertTagsToHtml).join('')
     artist_tags ? $('.tags.artists ul').html(artist_tags) : $('.tags.artists').hide()
     character_tags ? $('.tags.characters ul').html(character_tags) : $('.tags.characters').hide()
     copyright_tags ? $('.tags.copyright ul').html(copyright_tags) : $('.tags.copyright').hide()
     metadata_tags ? $('.tags.metadata ul').html(metadata_tags) : $('.tags.metadata').hide()
     regular_tags ? $('.tags.regular ul').html(regular_tags) : $('.tags.regular').hide()
+    custom_tags ? $('.tags.custom-tags ul').html(custom_tags) : $('.tags.custom-tags').hide()
     $('.tags.placeholder-glow').hide()
     displaySideBarAnimations() // $('.tags:not(.placeholder-glow)').show()
 
