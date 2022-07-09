@@ -26,12 +26,12 @@ app.whenReady().then(() => {
   createWindow()
 })
 
-const folder = "C:/Users/Admin/Desktop/flat_chest legs_crossed"
+/*const folder = "C:/Users/Admin/Desktop/flat_chest legs_crossed"
 const fs = require('fs')
 var gallery = []
 fs.readdirSync(folder).forEach(file => {
   gallery.push({src: folder+'/'+file})
-})
+})*/
 
 const axios = require('axios').default
 
@@ -90,6 +90,8 @@ function galleryRequireGelbooru(e, page, tags) {
         db.serialize(() => {
           db.get("SELECT * FROM posts WHERE post_id = ? AND favorite=1", post.id, (err, row)=>{
             post.favorite = row ? 1 : 0
+            post.custom_tags = row ? row.custom_tags : ''
+            post.local_directory = row ? row.local_directory : ''
             if (/\.(webm|mp4)$/.test(post.file_url)) {
               images.push({
                 "media": "video",
@@ -387,6 +389,7 @@ ipc.on("tags:organize", (e, tags) => {
       q: 'index',
       json: 1,
       names: tags,
+      limit: 1000,
     }
   }).then(function (response) {
     var _tags = response.data.tag
