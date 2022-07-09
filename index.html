@@ -1140,6 +1140,7 @@ function editPostDetails(e) {
               </div>
         `,
         didOpen: () => {
+          SetCaretAtEnd(document.getElementById('custom-tags'))
           $('#custom-tags').on('input', function() {
             $(this).closest('.swal2-html-container').find('.custom-tags').html("")
             $('.edit-post-swal .custom-tags').append(getCustomTagsField($(this).val().trim()))
@@ -1610,6 +1611,14 @@ function selectFolder(e) {
 
 folders.load('.side .folders>ul', selectFolder)
 
+function SetCaretAtEnd(elem) {
+  var elemLen = elem.value.length;
+  if (elem.selectionStart || elem.selectionStart == '0') {
+    elem.selectionStart = elemLen;
+    elem.selectionEnd = elemLen;
+    elem.focus();
+  }
+}
   </script>
 </body>
 </html>

@@ -356,6 +356,7 @@ ipc.on("post:edit", (e, post_id, custom_tags, local_directory, favorite) => {
     const post = response.data.post[0]
     var db = new sqlite3.Database(path.join(__dirname, 'localbooru.db'))
     
+    custom_tags = custom_tags.trim().split(/\s+/).map(tag => tag.replace(/^_/, "")).join(' ')
     var stmt = db.prepare(`INSERT INTO posts (post_id, created_at, score, width, height, md5, directory,
       image, rating, source, change, owner, creator_id, parent_id, sample, preview_height, preview_width,
       tags, title, has_notes, has_comments, file_url, preview_url, sample_url, sample_height, sample_width,
@@ -458,7 +459,6 @@ ipc.on("custom-tags:reload", (e, custom_tags) => {
 
 /*
  * Next:
- * - auto focus in custom tags input on edit favorite
  * - add favorite functionality on spotlight gallery
  * - add loading animated icons for certain long processes (add to favourited / save or remove favorite / view details)
  * - Icon with settings / Help / About
