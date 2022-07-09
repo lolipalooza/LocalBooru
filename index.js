@@ -149,6 +149,11 @@ function galleryRequireDatabase(e, page, tags) {
           route = decodeURIComponent(route)
           andQuery.push(`local_directory='${route}'`)
         }
+        else if (/^!folder:/.test(tag)) {
+          route = tag.replace(/^!folder:/, "")
+          route = decodeURIComponent(route)
+          andQuery.push(`local_directory LIKE '${route}%'`)
+        }
         else if (/^sort:/.test(tag)) {
           tag = tag.replace(/^sort:/, "")
           var data = tag.split(/:/)
@@ -441,7 +446,6 @@ ipc.on("custom-tags:reload", (e, custom_tags) => {
 
 /*
  * Next:
- * - Folders search must show all files inside the folder and all subfolders inside
  * - Custom tags searchable from "gelbooru"
  * - auto focus in custom tags input on edit favorite
  * - add favorite functionality on spotlight gallery

@@ -1601,7 +1601,7 @@ function selectFolder(e) {
 
   var route = $(this).closest('li').data('route')
   var encoded_route = encodeURI(route)
-  var search = $('.searchInput').val().trim().split(/\s+/).filter(tag=>/^(?!folder\:)/.test(tag))
+  var search = $('.searchInput').val().trim().split(/\s+/).filter(tag=>/^(?!!?folder\:)/.test(tag))
   search.push(`folder:${encoded_route}`)
   $('.searchInput').val(search.join(' ')).focus()
 }
