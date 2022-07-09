@@ -1243,42 +1243,6 @@ function displaySideBarAnimations() {
   $('.folders').show()
 }
 
-function displaySideBarAnimations2() {
-  var _section = 0, _tag = 0
-  var sections = ['.artists','.characters','.copyright','.metadata','.regular']
-  $('.folders').css('visibility', 'hidden').show()
-  var interval = setInterval(function () {
-    if (_section == sections.length) {
-      clearInterval(interval)
-      setTimeout(function() {
-        $('.tags, .side .tag').removeClass('animate__fadeInRight animated')
-        $('.folders').css('visibility', 'visible').addClass('animate__fadeInRight animated')
-        setTimeout(function() {
-          $('.folders').removeClass('animate__fadeInRight animated')
-        }, 850)
-      }, 850)
-    } else {
-      var section = sections[_section]
-      var tag = $($(section).find('.tag')[_tag])
-      if (_section==0 && _tag==0 && $(section).is(':hidden')) {
-        $(section).addClass('animate__fadeInRight animated')
-        $(section).show()
-      } else if(_tag == $(section).find('.tag').length) {
-        _section++
-        _tag=0
-        section = sections[_section]
-        tag = $($(section).find('.tag')[_tag])
-        $(section).addClass('animate__fadeInRight animated')
-        $(section).show()
-      } else {
-        $(tag).addClass('animate__fadeInRight animated')
-        $(tag).show()
-        _tag++
-      }
-    }
-  }, 50);
-}
-
 function sideTagClick() {
   var tag = $(this).text().trim().split(/\s+/)[0]
   var search = $('.searchInput').val().trim().split(/\s+/).filter(i => i!=tag)

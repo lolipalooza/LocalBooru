@@ -440,10 +440,8 @@ ipc.on("custom-tags:reload", (e, custom_tags) => {
 })
 
 /*
-db.serialize(() => {
-    db.each("SELECT rowid AS id, info FROM lorem", (err, row) => {
-        console.log(row.id + ": " + row.info)
-    })
-})
-db.close()
-*/
+ * Next:
+ * - Folders search must show all files inside the folder and all subfolders inside
+ * - Custom tags searchable from "gelbooru"
+ * - Icon with settings / Help / About
+ */
