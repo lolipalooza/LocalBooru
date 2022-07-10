@@ -1454,7 +1454,7 @@ function spotlightConfig(gallery, $this, ipc) {
           post[prop] = $this.closest('.animate-box').find('meta').data(prop)
         })
 
-        ipc.send("tags:organize", post.tags)
+        ipc.send("tags:organize", post.tags, post.custom_tags)
         ipc.once("tags:htmlresponse", (e, _tags) => {
 
           Spotlight.zoom(1)
@@ -1466,6 +1466,7 @@ function spotlightConfig(gallery, $this, ipc) {
           var copyright_tags = _tags.filter(t=>t.type==3).map(convertTagsToHtml).join('')
           var metadata_tags = _tags.filter(t=>t.type==5).map(convertTagsToHtml).join('')
           var regular_tags = _tags.filter(t=>t.type==0).map(convertTagsToHtml).join('')
+          var custom_tags = _tags.filter(t=>t.type==7).map(convertTagsToHtml).join('')
 
           var sample_url = post.sample ? `<div>sample: <span>${post.sample_url}</span></div>` : ``
 
@@ -1474,16 +1475,18 @@ function spotlightConfig(gallery, $this, ipc) {
             html: `
               <div class="post-details">
                 <div class="tags">
-                  <h5>Artist</h5>
-                  <div class="text-left">${artist_tags}</div>
-                  <h5>Character</h5>
-                  <div class="text-left">${character_tags}</div>
-                  <h5>Copyright</h5>
-                  <div class="text-left">${copyright_tags}</div>
-                  <h5>Metadata</h5>
-                  <div class="text-left">${metadata_tags}</div>
-                  <h5>Tags</h5>
-                  <div class="text-left">${regular_tags}</div>
+                  <h5 class="artists">Artist</h5>
+                  <div class="artists text-left">${artist_tags}</div>
+                  <h5 class="characters">Character</h5>
+                  <div class="characters text-left">${character_tags}</div>
+                  <h5 class="copyright">Copyright</h5>
+                  <div class="copyright text-left">${copyright_tags}</div>
+                  <h5 class="metadata">Metadata</h5>
+                  <div class="metadata text-left">${metadata_tags}</div>
+                  <h5 class="regular">Tags</h5>
+                  <div class="regular text-left">${regular_tags}</div>
+                  <h5 class="custom-tags">Custom Tags</h5>
+                  <div class="custom-tags text-left">${custom_tags}</div>
                 </div>
                 <div>
                   <div class="details-preview">
@@ -1515,6 +1518,14 @@ function spotlightConfig(gallery, $this, ipc) {
                 </div>
               </div>
             `,
+            didOpen: () => {
+              artist_tags ? $('.post-details .artists').show() : $('.post-details .artists').hide()
+              character_tags ? $('.post-details .characters').show() : $('.post-details .characters').hide()
+              copyright_tags ? $('.post-details .copyright').show() : $('.post-details .copyright').hide()
+              metadata_tags ? $('.post-details .metadata').show() : $('.post-details .metadata').hide()
+              regular_tags ? $('.post-details .regular').show() : $('.post-details .regular').hide()
+              custom_tags ? $('.post-details .custom-tags').show() : $('.post-details .custom-tags').hide()
+            },
           }).then((result) => {
             $('body').unbind()
           })

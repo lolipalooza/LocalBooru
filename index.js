@@ -140,7 +140,9 @@ function galleryRequireDatabase(e, page, tags) {
         if (/^-/.test(tag)) {
           tag = tag.replace(/^-/, "")
           inverted = true
-        } else if (/^_/.test(tag)) {
+        }
+
+        if (/^_/.test(tag)) {
           tag = tag.replace(/^_/, "")
         }
 
@@ -391,7 +393,7 @@ ipc.on("post:edit", (e, post_id, custom_tags, local_directory, favorite) => {
   //})
 })
 
-ipc.on("tags:organize", (e, tags) => {
+ipc.on("tags:organize", (e, tags, custom_tags=null) => {
   axios.get('https://gelbooru.com/index.php', {
     params: {
       page: 'dapi',
@@ -404,20 +406,32 @@ ipc.on("tags:organize", (e, tags) => {
   }).then(function (response) {
     var _tags = response.data.tag
     _tags.sort((a,b) => (a.name > b.name) ? 1 : ((b.name > a.name) ? -1 : 0))
-    var custom_tags = []
+    var _custom_tags = []
 
     var db = new sqlite3.Database(path.join(__dirname, 'localbooru.db'))
     db.serialize(() => {
-      var sql = `SELECT id, name, (
-        SELECT COUNT(0) FROM posts WHERE (custom_tags=name OR custom_tags LIKE name||' %'
-          OR custom_tags LIKE '% '||name||' %' OR custom_tags LIKE '% '||name)
-      ) AS count, type, '0' AS ambiguous FROM tags`
-      db.each(sql, (err, row)=>{
-        custom_tags.push(row)
-      })
+      if (custom_tags != null) {
+        custom_tags.trim().split(/\s+/).forEach(tag => {
+          var sql = `SELECT id, name, (
+            SELECT COUNT(0) FROM posts WHERE (custom_tags='${tag}' OR custom_tags LIKE '${tag} %'
+              OR custom_tags LIKE '% ${tag} %' OR custom_tags LIKE '% ${tag}')
+          ) AS count, type, '0' AS ambiguous FROM tags WHERE name='${tag}'`
+          db.each(sql, (err, row)=>{
+            _custom_tags.push(row)
+          })
+        })
+      } else {
+        var sql = `SELECT id, name, (
+          SELECT COUNT(0) FROM posts WHERE (custom_tags=name OR custom_tags LIKE name||' %'
+            OR custom_tags LIKE '% '||name||' %' OR custom_tags LIKE '% '||name)
+        ) AS count, type, '0' AS ambiguous FROM tags`
+        db.each(sql, (err, row)=>{
+          _custom_tags.push(row)
+        })
+      }
     })
     db.close(function () {
-      e.sender.send("tags:htmlresponse", _tags.concat(custom_tags))
+      e.sender.send("tags:htmlresponse", _tags.concat(_custom_tags))
     })
   })
   .catch(function (error) {
