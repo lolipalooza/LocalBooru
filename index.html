@@ -1432,10 +1432,11 @@ function spotlightConfig(gallery, $this, ipc) {
     //title: 'LocalBooru Gallery',
     spinner: true,
     index: clicked_index,
-    //autoslide: true,
-    //progress: false,
+    autoslide: 3,
+    progress: false,
     onshow: function(index){ // fires when gallery opens
       $('._menu').removeClass('draggable')
+      setTimeout(()=>{Spotlight.play(false)},1)
 
       // the method "addControl" returns the new created control element
       like = Spotlight.addControl("like", function() {
