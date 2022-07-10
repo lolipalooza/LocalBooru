@@ -9,7 +9,7 @@ var path = require('path')
 // Initialize db
 const fs = require('fs')
 try {
-  if (!fs.existsSync('./localbooru.db')) {
+  if (!fs.existsSync( path.join(__dirname, 'localbooru.db') )) {
   const db = new sqlite3.Database(path.join(__dirname, 'localbooru.db'))
     db.serialize(() => {
       db.run(`CREATE TABLE "posts" (
