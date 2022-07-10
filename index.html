@@ -427,10 +427,10 @@
       align-items: flex-end;
       z-index: 1;
     }
-    .animate-box:hover .card-icons i {
+    .animate-box:hover .card-icons > * {
       transform: translateY(-38px);
     }
-    .animate-box:hover .card-icons i.fa-heart {
+    .animate-box:hover .card-icons :nth-child(2) {
       transition-delay: 0.1s;
     }
     .card__image::before {
@@ -458,6 +458,14 @@
     }
     .animate-box:hover .card__image {
       box-shadow: 10px 20px 40px rgb(0 0 0 / 35%);
+    }
+    .animate-box .card-icons .loading {
+      position: relative;
+    }
+    .animate-box .card-icons .loading svg {
+      position: absolute;
+      bottom: -115px;
+      right: -70px;
     }
     @keyframes loading-anim {
       from {
@@ -1013,6 +1021,9 @@ function editPostDetails(e) {
   if (!e) e = window.event
   e.stopPropagation()
 
+  $(this).hide()
+  $(this).closest('.card-icons').append(`<span class="loading">${miniloading}</span>`)
+
   var ipc = e.data.ipc
   var post_id = $(this).closest('.animate-box').find('meta').data('id')
   ipc.send("post:require", post_id)
@@ -1060,6 +1071,9 @@ function editPostDetails(e) {
         return html
       }
       
+      $(this).show()
+      $(this).closest('.card-icons').find('.loading').remove()
+
       Swal.mixin({
         customClass: {
           container: 'edit-post-swal'
@@ -1319,6 +1333,16 @@ const loading = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www
 </g>
 </svg>`
 
+const miniloading = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="200px" height="200px" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid" style="margin:auto;display:block;">
+<circle cx="50" cy="50" r="0" fill="none" stroke="#e90c59" stroke-width="2">
+  <animate attributeName="r" repeatCount="indefinite" dur="1s" values="0;40" keyTimes="0;1" keySplines="0 0.2 0.8 1" calcMode="spline" begin="0s"></animate>
+  <animate attributeName="opacity" repeatCount="indefinite" dur="1s" values="1;0" keyTimes="0;1" keySplines="0.2 0 0.8 1" calcMode="spline" begin="0s"></animate>
+</circle><circle cx="50" cy="50" r="0" fill="none" stroke="#46dff0" stroke-width="2">
+  <animate attributeName="r" repeatCount="indefinite" dur="1s" values="0;40" keyTimes="0;1" keySplines="0 0.2 0.8 1" calcMode="spline" begin="-0.5s"></animate>
+  <animate attributeName="opacity" repeatCount="indefinite" dur="1s" values="1;0" keyTimes="0;1" keySplines="0.2 0 0.8 1" calcMode="spline" begin="-0.5s"></animate>
+</circle>
+</svg>`
+
 function displayGalleryAnimations() {
   var next = 0
   var myInterval = setInterval(function () {
@@ -1376,7 +1400,7 @@ function buildPost(post) {
               <div class="card__content">
                 ${post_icon_html}
                 <div class="card-icons">
-                  <i class="fa-regular ${post.favorite?'fa-solid fa-heart':'fa-regular fa-heart'}" data-bs-toggle="tooltip" title="${post.favorite?'Editar favorito':'Agregar a favoritos'}"></i>
+                  <i class="${post.favorite?'fa-solid fa-heart':'fa-regular fa-heart'}" data-bs-toggle="tooltip" title="${post.favorite?'Editar favorito':'Agregar a favoritos'}"></i>
                 </div>
               </div>
             </div>
