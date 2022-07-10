@@ -1161,6 +1161,11 @@ function editPostDetails(e) {
             Swal.fire('¡Post guardado en favoritos!', '', 'success')
             folders.load('.side .folders>ul', selectFolder)
             $(this).tooltip('dispose').removeClass('fa-regular').addClass('fa-solid').attr('title', 'Editar favorito').tooltip()
+            if ($('#spotlight').length>0)
+              $('#spotlight').find('.spl-like').addClass("on")
+            $(this).closest('.animate-box').find('meta').data('favorite', 1)
+            $(this).closest('.animate-box').find('meta').data('local_directory', local_directory)
+            $(this).closest('.animate-box').find('meta').data('custom_tags', custom_tags)
           })
         } else if (result.isDenied) {
           ipc.send("post:edit", post_id, custom_tags.trim(), local_directory.trim(), 0)
@@ -1168,8 +1173,14 @@ function editPostDetails(e) {
             Swal.fire('Post removido de favoritos', 'El post fue removido de favoritos pero toda su información adicional sigue almancenada en la base de datos.', 'info')
             folders.load('.side .folders>ul', selectFolder)
             $(this).tooltip('dispose').removeClass('fa-solid').addClass('fa-regular').attr('title', 'Agregar a favoritos').tooltip()
+            if ($('#spotlight').length>0)
+              $('#spotlight').find('.spl-like').removeClass("on")
+            $(this).closest('.animate-box').find('meta').data('favorite', 0)
+            $(this).closest('.animate-box').find('meta').data('local_directory', '')
+            $(this).closest('.animate-box').find('meta').data('custom_tags', '')
           })
         }
+        $('body').unbind() // Detaching spotlight mousewheel event
 
         if(result.isConfirmed || result.isDenied) {
           ipc.send("custom-tags:reload", custom_tags.trim())
@@ -1351,10 +1362,6 @@ function buildPost(post) {
     post_source = `href="${image}"`
   }
 
-  var btn_add_to_favorites = '<i class="fa-regular fa-heart" data-bs-toggle="tooltip" title="Agregar a favoritos"></i>'
-  var btn_remove_favorite = '<i class="fa-solid fa-heart" data-bs-toggle="tooltip" title="Quitar de favoritos"></i>'
-  var favorite_btn = post.favorite ? btn_remove_favorite : btn_add_to_favorites
-
   return `<div class="animate-box">
             <div class="card__image">
               <a class="spotlight" ${post_source}>
@@ -1363,13 +1370,11 @@ function buildPost(post) {
               <div class="card__content">
                 ${post_icon_html}
                 <div class="card-icons">
-                  <!--<i class="fa-solid fa-pen-to-square" data-bs-toggle="tooltip" title="Editar detalles"></i>-->
                   <i class="fa-regular ${post.favorite?'fa-solid fa-heart':'fa-regular fa-heart'}" data-bs-toggle="tooltip" title="${post.favorite?'Editar favorito':'Agregar a favoritos'}"></i>
-                  <!--${favorite_btn}-->
                 </div>
               </div>
             </div>
-            <meta data-id="${post.id}" data-created_at="${post.created_at}" data-score="${post.score}" data-width="${post.width}" data-height="${post.height}" data-md5="${post.md5}" data-directory="${post.directory}" data-image="${post.image}" data-rating="${post.rating}" data-source="${post.source}" data-change="${post.change}" data-owner="${post.owner}" data-creator_id="${post.creator_id}" data-parent_id="${post.parent_id}" data-sample="${post.sample}" data-preview_height="${post.preview_height}" data-preview_width="${post.preview_width}" data-tags="${post.tags}" data-title="${post.title}" data-has_notes="${post.has_notes}" data-has_comments="${post.has_comments}" data-file_url="${post.file_url}" data-preview_url="${post.preview_url}" data-sample_url="${post.sample_url}" data-sample_height="${post.sample_height}" data-sample_width="${post.sample_width}" data-status="${post.status}" data-post_locked="${post.post_locked}" data-has_children="${post.has_children}" data-local_directory="${post.local_directory}" data-custom_tags="${post.custom_tags}" />
+            <meta data-id="${post.id}" data-created_at="${post.created_at}" data-score="${post.score}" data-width="${post.width}" data-height="${post.height}" data-md5="${post.md5}" data-directory="${post.directory}" data-image="${post.image}" data-rating="${post.rating}" data-source="${post.source}" data-change="${post.change}" data-owner="${post.owner}" data-creator_id="${post.creator_id}" data-parent_id="${post.parent_id}" data-sample="${post.sample}" data-preview_height="${post.preview_height}" data-preview_width="${post.preview_width}" data-tags="${post.tags}" data-title="${post.title}" data-has_notes="${post.has_notes}" data-has_comments="${post.has_comments}" data-file_url="${post.file_url}" data-preview_url="${post.preview_url}" data-sample_url="${post.sample_url}" data-sample_height="${post.sample_height}" data-sample_width="${post.sample_width}" data-status="${post.status}" data-post_locked="${post.post_locked}" data-has_children="${post.has_children}" data-local_directory="${post.local_directory}" data-custom_tags="${post.custom_tags}" data-favorite="${post.favorite}" />
           </div>`
 }
 
@@ -1425,34 +1430,20 @@ function spotlightConfig(gallery, $this, ipc) {
     //progress: false,
     onshow: function(index){ // fires when gallery opens
       $('._menu').removeClass('draggable')
+
       // the method "addControl" returns the new created control element
       like = Spotlight.addControl("like", function() {
-        // get the current like state
-        // at this point we use the stored last index from the variable "slide"
-        const current_like_state = !gallery[clicked_index].like;
-
-        // toggles the current like state
-        gallery[clicked_index].like = current_like_state;
-
-        // assign the state as class to visually represent the current like state
-        this.classList.toggle("on")
-
-        if(current_like_state){
-
-            // do something if liked ...
-        }
-        else{
-
-            // do something if unliked ...
-        }
+        $('body').on('mousewheel', function () {Spotlight.zoom(1)})
+        $($('.animate-box')[slide]).find('.fa-heart').click()
       })
       properties = Spotlight.addControl("properties", function() {
-        var props = ['id','post_id','created_at','score','width','height','md5','directory','image','rating','source','change','owner','creator_id','parent_id','sample','preview_height','preview_width','tags','title','has_notes','has_comments','file_url','preview_url','sample_url','sample_height','sample_width','status','post_locked','has_children','local_directory','custom_tags']
+        var props = ['id','post_id','created_at','score','width','height','md5','directory','image','rating','source','change','owner','creator_id','parent_id','sample','preview_height','preview_width','tags','title','has_notes','has_comments','file_url','preview_url','sample_url','sample_height','sample_width','status','post_locked','has_children','local_directory','custom_tags','favorite']
         var post = {}
 
         props.forEach(prop => {
-          post[prop] = $this.closest('.animate-box').find('meta').data(prop)
+          post[prop] = $($('.animate-box')[slide]).find('meta').data(prop)
         })
+        console.log(post)
 
         ipc.send("tags:organize", post.tags, post.custom_tags)
         ipc.once("tags:htmlresponse", (e, _tags) => {
@@ -1531,6 +1522,18 @@ function spotlightConfig(gallery, $this, ipc) {
           })
         })
       })
+    },
+    // fires when gallery change to another page
+    onchange: function(index, options){
+
+        // store the current index for the button listener
+        // the slide index start from 1 (as "page 1")
+        slide = index - 1;
+
+        // initially apply the stored like state when slide is openened
+        // at this point we use the stored like element
+        gallery[slide].like = $($('.animate-box')[slide]).find('meta').data('favorite')
+        like.classList.toggle("on", gallery[slide].like);
     },
     onclose: function(index){ // fires when gallery is requested to close
       $('._menu').addClass('draggable')

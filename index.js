@@ -423,8 +423,8 @@ ipc.on("tags:organize", (e, tags, custom_tags=null) => {
       } else {
         var sql = `SELECT id, name, (
           SELECT COUNT(0) FROM posts WHERE (custom_tags=name OR custom_tags LIKE name||' %'
-            OR custom_tags LIKE '% '||name||' %' OR custom_tags LIKE '% '||name)
-        ) AS count, type, '0' AS ambiguous FROM tags`
+            OR custom_tags LIKE '% '||name||' %' OR custom_tags LIKE '% '||name) AND favorite=1
+        ) AS count, type, '0' AS ambiguous FROM tags WHERE count<>0`
         db.each(sql, (err, row)=>{
           _custom_tags.push(row)
         })
@@ -473,7 +473,6 @@ ipc.on("custom-tags:reload", (e, custom_tags) => {
 
 /*
  * Next:
- * - add favorite functionality on spotlight gallery
  * - add loading animated icons for certain long processes (add to favourited / save or remove favorite / view details)
  * - Icon with settings / Help / About
  */
