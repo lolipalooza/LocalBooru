@@ -359,26 +359,28 @@ ipc.on("post:edit", (e, post_id, custom_tags, local_directory, favorite) => {
     var db = new sqlite3.Database(path.join(__dirname, 'localbooru.db'))
     
     custom_tags = custom_tags.trim().split(/\s+/).map(tag => tag.replace(/^_/, "")).join(' ')
-    var stmt = db.prepare(`INSERT INTO posts (post_id, created_at, score, width, height, md5, directory,
-      image, rating, source, change, owner, creator_id, parent_id, sample, preview_height, preview_width,
-      tags, title, has_notes, has_comments, file_url, preview_url, sample_url, sample_height, sample_width,
-      status, post_locked, has_children, local_directory, custom_tags, favorite)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(post_id) DO UPDATE SET local_directory=?, custom_tags=?, favorite=?`)
-    stmt.run(post_id, post.created_at, post.score, post.width, post.height, post.md5, post.directory,
-      post.image, post.rating, post.source, post.change, post.owner, post.creator_id, post.parent_id,
-      post.sample, post.preview_height, post.preview_width, post.tags, post.title, post.has_notes,
-      post.has_comments, post.file_url, post.preview_url, post.sample_url, post.sample_height,
-      post.sample_width, post.status, post.post_locked, post.has_children, local_directory, custom_tags, favorite,
-      local_directory, custom_tags, favorite)
-    stmt.finalize()
+    db.serialize(() => {
+      var stmt = db.prepare(`INSERT INTO posts (post_id, created_at, score, width, height, md5, directory,
+        image, rating, source, change, owner, creator_id, parent_id, sample, preview_height, preview_width,
+        tags, title, has_notes, has_comments, file_url, preview_url, sample_url, sample_height, sample_width,
+        status, post_locked, has_children, local_directory, custom_tags, favorite)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(post_id) DO UPDATE SET local_directory=?, custom_tags=?, favorite=?`)
+      stmt.run(post_id, post.created_at, post.score, post.width, post.height, post.md5, post.directory,
+        post.image, post.rating, post.source, post.change, post.owner, post.creator_id, post.parent_id,
+        post.sample, post.preview_height, post.preview_width, post.tags, post.title, post.has_notes,
+        post.has_comments, post.file_url, post.preview_url, post.sample_url, post.sample_height,
+        post.sample_width, post.status, post.post_locked, post.has_children, local_directory, custom_tags, favorite,
+        local_directory, custom_tags, favorite)
+      stmt.finalize()
 
-    custom_tags.split(/\s+/).forEach(tag => {
-      if (tag) {
-        var stmt = db.prepare(`INSERT OR IGNORE INTO tags (name, type) VALUES (?, ?)`)
-        stmt.run(tag, 7)
-        stmt.finalize()
-      }
+      custom_tags.split(/\s+/).forEach(tag => {
+        if (tag) {
+          var stmt = db.prepare(`INSERT OR IGNORE INTO tags (name, type) VALUES (?, ?)`)
+          stmt.run(tag, 7)
+          stmt.finalize()
+        }
+      })
     })
 
     db.close(function () {
@@ -473,6 +475,7 @@ ipc.on("custom-tags:reload", (e, custom_tags) => {
 
 /*
  * Next:
+ * - fix the spotlight autoslide issue
  * - add loading animated icons for certain long processes (add to favourited / save or remove favorite / view details)
  * - Icon with settings / Help / About
  */
