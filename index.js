@@ -6,6 +6,76 @@ const ipc = require("electron").ipcMain
 const sqlite3 = require('sqlite3').verbose()
 var path = require('path')
 
+// Initialize db
+const fs = require('fs')
+try {
+  if (!fs.existsSync('./localbooru.db')) {
+  const db = new sqlite3.Database(path.join(__dirname, 'localbooru.db'))
+    db.serialize(() => {
+      db.run(`CREATE TABLE "posts" (
+        "id"  INTEGER,
+        "post_id" INTEGER UNIQUE,
+        "created_at"  TEXT,
+        "score" INTEGER,
+        "width" INTEGER,
+        "height"  INTEGER,
+        "md5" TEXT,
+        "directory" TEXT,
+        "image" TEXT,
+        "rating"  TEXT,
+        "source"  TEXT,
+        "change"  INTEGER,
+        "owner" TEXT,
+        "creator_id"  INTEGER,
+        "parent_id" INTEGER,
+        "sample"  INTEGER,
+        "preview_height"  INTEGER,
+        "preview_width" INTEGER,
+        "tags"  TEXT,
+        "title" TEXT,
+        "has_notes" TEXT,
+        "has_comments"  TEXT,
+        "file_url"  TEXT,
+        "preview_url" TEXT,
+        "sample_url"  TEXT,
+        "sample_height" INTEGER,
+        "sample_width"  INTEGER,
+        "status"  TEXT,
+        "post_locked" INTEGER,
+        "has_children"  TEXT,
+        "local_directory" TEXT,
+        "custom_tags" TEXT DEFAULT ' ',
+        "favorite"  INTEGER,
+        PRIMARY KEY("id" AUTOINCREMENT)
+      )`)
+      db.run(`CREATE TABLE "settings" (
+        "id"  INTEGER,
+        "remember_last_search"  TEXT,
+        "remember_last_source"  TEXT,
+        "posts_per_page"  INTEGER,
+        "autocomplete_tags_limit" INTEGER,
+        "local_root_path" TEXT,
+        "default_save_path" TEXT,
+        PRIMARY KEY("id" AUTOINCREMENT)
+      )`)
+      db.run(`CREATE TABLE "tags" (
+        "id"  INTEGER,
+        "name"  TEXT UNIQUE,
+        "type"  INTEGER,
+        PRIMARY KEY("id" AUTOINCREMENT)
+      )`)
+      var stmt = db.prepare(`INSERT INTO settings (id,remember_last_search,remember_last_source,
+            posts_per_page,autocomplete_tags_limit,local_root_path,default_save_path) VALUES (?,?,?,?,?,?,?)`)
+          stmt.run(1,"","gelbooru","100","100","","/uncategorized")
+          stmt.finalize()
+    })
+    db.close()
+  }
+} catch(err) {
+  console.error(err)
+}
+
+
 var win
 
 const createWindow = () => {
