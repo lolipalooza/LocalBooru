@@ -545,6 +545,8 @@ ipc.on("custom-tags:reload", (e, custom_tags) => {
 
 /*
  * Next:
+ * - multi-select/edit
+ * - add filter "per_page:<num_per_page>"
  * - add loading animated icons for certain long processes (add to favorite / save or remove favorite / view details)
  * - Icon with settings / Help / About
  */
