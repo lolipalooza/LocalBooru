@@ -563,3 +563,13 @@ ipc.on("custom-tags:reload", (e, custom_tags) => {
  * - add loading animated icons for certain long processes (add to favorite / save or remove favorite / view details)
  * - Icon with settings / Help / About
  */
+
+ /*
+  * Useful links:
+  * Gelbooru - How to retrieve notes info for posts: https://gelbooru.com/index.php?page=forum&s=view&id=3226
+  * Gelbooru - How to API: https://gelbooru.com/index.php?page=wiki&s=view&id=18780
+  * -
+  * Tags API example: https://gelbooru.com/index.php?page=dapi&s=tag&q=index&json=1&names=kaname_madoka%20legs_crossed
+  * Posts API example: https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&tags=kaname_madoka&limit=1001
+  * Single post example: https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&id=7430194
+  */
