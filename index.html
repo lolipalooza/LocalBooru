@@ -868,7 +868,7 @@
 
         setSourceCheckboxState(default_source)
         $('.searchInput').val(default_tags)
-        ipc.send("gallery:require", null, default_tags, default_source)
+        ipc.send("gallery:require", null, default_tags, default_source, settings)
         ipc.once("gallery:view", galleryDefaultView)
       })
 
@@ -893,7 +893,7 @@
         $('.fa-heart').on('click', {ipc: ipc}, editPostDetails)
         $('[data-bs-toggle=tooltip]').tooltip()
         displayGalleryAnimations()
-        $('.content_detail__pagination a').on('click', {ipc: ipc}, clickOnPaginationButtons)
+        $('.content_detail__pagination a').on('click', {ipc: ipc, settings: settings}, clickOnPaginationButtons)
       }
 
       $('.source-checkbox input').on('change', function(){
@@ -903,7 +903,7 @@
         $('.tags.placeholder-glow').show()
         $('.tags:not(.placeholder-glow)').hide()
         
-        ipc.send("gallery:require", null, tags, source)
+        ipc.send("gallery:require", null, tags, source, settings)
         ipc.once("gallery:view", galleryDefaultView)
 
         ipc.send("settings:edit", 'remember_last_source', source)
@@ -921,7 +921,7 @@
           ipc.send("settings:edit", 'remember_last_search', tags)
           ipc.once("settings:updated", (e) => {})
 
-          ipc.send("gallery:require", null, tags, source)
+          ipc.send("gallery:require", null, tags, source, settings)
           ipc.once("gallery:view", (e, gallery, images) => {
             $('.gallery').html('')
             if (gallery["@attributes"].count > 0)
@@ -940,7 +940,7 @@
             $('.fa-heart').on('click', {ipc: ipc}, editPostDetails)
             $('[data-bs-toggle=tooltip]').tooltip()
             displayGalleryAnimations()
-            $('.content_detail__pagination a').on('click', {ipc: ipc}, clickOnPaginationButtons)
+            $('.content_detail__pagination a').on('click', {ipc: ipc, settings: settings}, clickOnPaginationButtons)
           })
         }
       })
@@ -1207,17 +1207,14 @@ function editPostDetails(e) {
 
 function clickOnPaginationButtons(e) {
   var ipc = e.data.ipc
+  var settings = e.data.settings
   var tags = $('.searchInput').val()
-  var page = $('.content_detail__pagination').attr('actpage') - 1
+  var page = $('.content_detail__pagination').attr('actpage')
   var source = getCurrentSourceCheckboxState()
-  var href = $(this).attr('href')
-  if (/[-+]1/.test(href)) {
-    page = /-1/.test(href) ? page - 1 : page + 1
-  } else page = href.match(/\d+/)[0]
   $('.gallery').append(`<div class="loading">${loading}</div>`)
   $('.animate-box').remove()
 
-  ipc.send("gallery:require", page, tags, source)
+  ipc.send("gallery:require", page, tags, source, settings)
   ipc.once("gallery:view", (e, gallery, images) => {
     $('.loading').remove()
     $.each(gallery.post, function( index, value ) {

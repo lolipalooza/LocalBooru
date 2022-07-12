@@ -129,29 +129,37 @@ ipc.on("settings:edit", (e, column, value) => {
   })
 })
 
-ipc.on("gallery:require", (e, page, tags, source) => {
+ipc.on("gallery:require", (e, page, tags, source, settings) => {
+  var per_page = settings.posts_per_page
+  
+  if (/limit\:\d+/.test(tags)) {
+    per_page = tags.match(/limit\:(\d+)/)[1]
+    tags = tags.trim().split(/\s+/).filter(tag=>!/limit\:\d+/.test(tag)).join(' ')
+  }
+  
   if (source == 'local')
   {
     e.sender.send("gallery:view", {'@attributes': {count: 0}}, [])
   }
+  
   else if (source == 'gelbooru')
   {
     if (/folder\:/.test(tags) || (/^_/.test(tags))) {
-      galleryRequireDatabase(e, page, tags)
+      galleryRequireDatabase(e, per_page, page, tags)
     } else {
-      galleryRequireGelbooru(e, page, tags)
+      galleryRequireGelbooru(e, per_page, page, tags)
     }
   }
 })
 
-function galleryRequireGelbooru(e, page, tags) {
+function galleryRequireGelbooru(e, per_page, page, tags) {
   axios.get('https://gelbooru.com/index.php', {
     params: {
       page: 'dapi',
       s: 'post',
       q: 'index',
       json: 1,
-      limit: '100',
+      limit: per_page,
       pid: page ? page - 1 : 0,
       tags: tags ?? '',
     }
@@ -197,7 +205,11 @@ function galleryRequireGelbooru(e, page, tags) {
   //})
 }
 
-function galleryRequireDatabase(e, page, tags) {
+function galleryRequireDatabase(e, per_page, page, tags) {
+  var _page = page ? page - 1 : 0
+  var offset = _page * per_page
+  var limit = " " + `LIMIT ${per_page} OFFSET ${offset}`
+
   const db = new sqlite3.Database(path.join(__dirname, 'localbooru.db'))
   var images = [], gallery = {post:[]}, query = '', sort = null
   db.serialize(() => {
@@ -268,8 +280,8 @@ function galleryRequireDatabase(e, page, tags) {
         }
       })
       order_by = sort ?? "ORDER BY change DESC"
-      query = "SELECT * FROM posts WHERE "+andQuery.join(" AND ")+" AND favorite=1 "+order_by
-    } else query = "SELECT * FROM posts ORDER BY change DESC"
+      query = "SELECT *, (SELECT count(0) AS count FROM posts WHERE "+andQuery.join(" AND ")+" AND favorite=1) AS count FROM posts WHERE "+andQuery.join(" AND ")+" AND favorite=1 " + order_by + limit
+    } else query = "SELECT *, (SELECT count(0) FROM posts) AS count FROM posts ORDER BY post_id DESC"+limit
     db.each(query, (err, row)=>{
       var post = row
       post._source='gelbooru'
@@ -294,7 +306,8 @@ function galleryRequireDatabase(e, page, tags) {
     })
   })
   db.close(function () {
-    gallery['@attributes'] = {count: gallery.post.length}
+    var count = gallery.post.length>0 ? gallery.post[0].count : 0
+    gallery['@attributes'] = {count: count, limit: per_page}
     e.sender.send("gallery:view", gallery, images)
   })
 }
@@ -443,7 +456,6 @@ ipc.on("post:edit", (e, post_id, custom_tags, local_directory, favorite) => {
         post.sample_width, post.status, post.post_locked, post.has_children, local_directory, custom_tags, favorite,
         local_directory, custom_tags, favorite)
       stmt.finalize()
-
       custom_tags.split(/\s+/).forEach(tag => {
         if (tag) {
           var stmt = db.prepare(`INSERT OR IGNORE INTO tags (name, type) VALUES (?, ?)`)
@@ -453,6 +465,20 @@ ipc.on("post:edit", (e, post_id, custom_tags, local_directory, favorite) => {
       })
     })
 
+    var sql = `SELECT id, name, type, (SELECT count(0) FROM posts
+                  WHERE (custom_tags=name
+                    OR custom_tags LIKE name||' %'
+                    OR custom_tags LIKE '% '||name||' %'
+                    OR custom_tags LIKE '% '||name) LIMIT 1) AS count
+                FROM tags WHERE type=7`
+    db.each(sql, (err, row)=>{
+      if (row.count==0) {
+        var tag = row.name
+        var stmt = db.prepare(`DELETE FROM tags WHERE name=?`)
+        stmt.run(tag)
+        stmt.finalize()
+      }
+    })
     db.close(function () {
       e.sender.send("post:updated")
     })
@@ -526,18 +552,6 @@ ipc.on("folders:require", e => {
 
 ipc.on("custom-tags:reload", (e, custom_tags) => {
   var db = new sqlite3.Database(path.join(__dirname, 'localbooru.db'))
-  db.each("SELECT * FROM tags WHERE type=7", (err, row)=>{
-    var tag = row.name
-    var sql = `SELECT * FROM posts
-      WHERE (custom_tags='${tag}' OR custom_tags LIKE '${tag} %' OR custom_tags LIKE '% ${tag} %' OR custom_tags LIKE '% ${tag}') LIMIT 1`
-    db.get(sql, (err, row)=>{
-      if (!row) {
-        var stmt = db.prepare(`DELETE FROM tags WHERE name=?`)
-        stmt.run(tag)
-        stmt.finalize()
-      }
-    })
-  })
   db.close(function () {
     e.sender.send("custom-tags:updated")
   })
