@@ -573,3 +573,7 @@ ipc.on("custom-tags:reload", (e, custom_tags) => {
   * Posts API example: https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&tags=kaname_madoka&limit=1001
   * Single post example: https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&id=7430194
   */
+
+  /*
+   * https://npm.io/package/@l2studio/iqdb-api
+   */
