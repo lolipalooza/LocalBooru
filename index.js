@@ -557,6 +557,30 @@ ipc.on("custom-tags:reload", (e, custom_tags) => {
   })
 })
 
+
+
+/*
+ * https://npm.io/package/@l2studio/iqdb-api
+ */
+var iqdb = require('@l2studio/iqdb-api')
+
+var local_img = 'file:///C:/Users/Admin/Desktop/Untitled/MEGA/LOST.DIR/Nueva%20carpeta%20(2)/Madoka/994c2ad7a14fe6328d8699a3c55a54d9.jpeg'
+var local_img2 = 'file:///C:/Users/Admin/Desktop/Untitled/MEGA/LOST.DIR/Nueva carpeta (2)/Madoka/994c2ad7a14fe6328d8699a3c55a54d9.jpeg'
+var local_img3 = 'C:/Users/Admin/Desktop/Untitled/MEGA/LOST.DIR/Nueva carpeta (2)/Madoka/994c2ad7a14fe6328d8699a3c55a54d9.jpeg'
+
+var url_img = 'https://i.pinimg.com/originals/db/e3/f6/dbe3f63aa7be977d0d91f604554e0abd.png'
+
+var buffer = fs.readFileSync(local_img3)
+
+iqdb.default(buffer, {
+  filename: local_img3,
+  website: {
+    id: 'www',
+    services: ['danbooru', 'konachan', 'yandere', 'gelbooru', 'sankaku', 'e-shuushuu', 'zerochan', 'anime-pictures']
+  }
+}).then(a=>{console.log(a)})
+.catch(err => { console.log(err) })
+
 /*
  * Next:
  * - multi-select/edit
@@ -573,7 +597,3 @@ ipc.on("custom-tags:reload", (e, custom_tags) => {
   * Posts API example: https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&tags=kaname_madoka&limit=1001
   * Single post example: https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&id=7430194
   */
-
-  /*
-   * https://npm.io/package/@l2studio/iqdb-api
-   */
