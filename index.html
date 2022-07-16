@@ -936,6 +936,7 @@
 
             $('.card__image').before().on('click', function() {
               Spotlight.show(images, spotlightConfig(images, $(this), ipc))
+              $('#spotlight').unbind().on('mouseleave', function (){Spotlight.menu(true)})
             })
             $('.fa-heart').on('click', {ipc: ipc}, editPostDetails)
             $('[data-bs-toggle=tooltip]').tooltip()
@@ -1223,6 +1224,7 @@ function clickOnPaginationButtons(e) {
 
     $('.card__image').before().on('click', function() {
       Spotlight.show(images, spotlightConfig(images, $(this), ipc))
+      $('#spotlight').unbind().on('mouseleave', function (){Spotlight.menu(true)})
     })
     $('.fa-heart').on('click', {ipc: ipc}, editPostDetails)
     $('[data-bs-toggle=tooltip]').tooltip()
