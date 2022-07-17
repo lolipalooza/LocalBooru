@@ -6,75 +6,25 @@ const ipc = require("electron").ipcMain
 const sqlite3 = require('sqlite3').verbose()
 var path = require('path')
 
-// Initialize db
 const fs = require('fs')
-try {
-  if (!fs.existsSync( path.join(__dirname, 'localbooru.db') )) {
-  const db = new sqlite3.Database(path.join(__dirname, 'localbooru.db'))
-    db.serialize(() => {
-      db.run(`CREATE TABLE "posts" (
-        "id"  INTEGER,
-        "post_id" INTEGER UNIQUE,
-        "created_at"  TEXT,
-        "score" INTEGER,
-        "width" INTEGER,
-        "height"  INTEGER,
-        "md5" TEXT,
-        "directory" TEXT,
-        "image" TEXT,
-        "rating"  TEXT,
-        "source"  TEXT,
-        "change"  INTEGER,
-        "owner" TEXT,
-        "creator_id"  INTEGER,
-        "parent_id" INTEGER,
-        "sample"  INTEGER,
-        "preview_height"  INTEGER,
-        "preview_width" INTEGER,
-        "tags"  TEXT,
-        "title" TEXT,
-        "has_notes" TEXT,
-        "has_comments"  TEXT,
-        "file_url"  TEXT,
-        "preview_url" TEXT,
-        "sample_url"  TEXT,
-        "sample_height" INTEGER,
-        "sample_width"  INTEGER,
-        "status"  TEXT,
-        "post_locked" INTEGER,
-        "has_children"  TEXT,
-        "local_directory" TEXT,
-        "custom_tags" TEXT DEFAULT ' ',
-        "favorite"  INTEGER,
-        PRIMARY KEY("id" AUTOINCREMENT)
-      )`)
-      db.run(`CREATE TABLE "settings" (
-        "id"  INTEGER,
-        "remember_last_search"  TEXT,
-        "remember_last_source"  TEXT,
-        "posts_per_page"  INTEGER,
-        "autocomplete_tags_limit" INTEGER,
-        "local_root_path" TEXT,
-        "default_save_path" TEXT,
-        PRIMARY KEY("id" AUTOINCREMENT)
-      )`)
-      db.run(`CREATE TABLE "tags" (
-        "id"  INTEGER,
-        "name"  TEXT UNIQUE,
-        "type"  INTEGER,
-        PRIMARY KEY("id" AUTOINCREMENT)
-      )`)
-      var stmt = db.prepare(`INSERT INTO settings (id,remember_last_search,remember_last_source,
-            posts_per_page,autocomplete_tags_limit,local_root_path,default_save_path) VALUES (?,?,?,?,?,?,?)`)
-          stmt.run(1,"","gelbooru","100","100","","/uncategorized")
-          stmt.finalize()
-    })
-    db.close()
-  }
-} catch(err) {
-  console.error(err)
-}
+var dbfile = null
 
+// Initialize db
+if (!fs.existsSync( path.join(__dirname, 'dbroute.dat') )) {
+  dbfile = path.join(__dirname, 'localbooru.db')
+  createAndInitializeDb(dbfile)
+} else {
+  fs.readFile(path.join(__dirname, 'dbroute.dat'), 'utf8', (err, data) => {
+    if (err) {
+      console.error(err)
+      return
+    }
+    dbfile = data
+    if (!fs.existsSync( dbfile )) {
+      createAndInitializeDb(dbfile)
+    }
+  })
+}
 
 var win
 
@@ -96,18 +46,81 @@ app.whenReady().then(() => {
   createWindow()
 })
 
-/*const folder = "C:/Users/Admin/Desktop/flat_chest legs_crossed"
+/*const folder = "C:/Users/Admin/Desktop/"
 const fs = require('fs')
 var gallery = []
 fs.readdirSync(folder).forEach(file => {
   gallery.push({src: folder+'/'+file})
 })*/
 
+function createAndInitializeDb(dbfile) {
+  const db = new sqlite3.Database(dbfile)
+  db.serialize(() => {
+    db.run(`CREATE TABLE "posts" (
+      "id"  INTEGER,
+      "post_id" INTEGER UNIQUE,
+      "created_at"  TEXT,
+      "score" INTEGER,
+      "width" INTEGER,
+      "height"  INTEGER,
+      "md5" TEXT,
+      "directory" TEXT,
+      "image" TEXT,
+      "rating"  TEXT,
+      "source"  TEXT,
+      "change"  INTEGER,
+      "owner" TEXT,
+      "creator_id"  INTEGER,
+      "parent_id" INTEGER,
+      "sample"  INTEGER,
+      "preview_height"  INTEGER,
+      "preview_width" INTEGER,
+      "tags"  TEXT,
+      "title" TEXT,
+      "has_notes" TEXT,
+      "has_comments"  TEXT,
+      "file_url"  TEXT,
+      "preview_url" TEXT,
+      "sample_url"  TEXT,
+      "sample_height" INTEGER,
+      "sample_width"  INTEGER,
+      "status"  TEXT,
+      "post_locked" INTEGER,
+      "has_children"  TEXT,
+      "local_directory" TEXT,
+      "custom_tags" TEXT DEFAULT ' ',
+      "favorite"  INTEGER,
+      PRIMARY KEY("id" AUTOINCREMENT)
+    )`)
+    db.run(`CREATE TABLE "settings" (
+      "id"  INTEGER,
+      "remember_last_search"  TEXT,
+      "remember_last_source"  TEXT,
+      "posts_per_page"  INTEGER,
+      "autocomplete_tags_limit" INTEGER,
+      "local_root_path" TEXT,
+      "default_save_path" TEXT,
+      PRIMARY KEY("id" AUTOINCREMENT)
+    )`)
+    db.run(`CREATE TABLE "tags" (
+      "id"  INTEGER,
+      "name"  TEXT UNIQUE,
+      "type"  INTEGER,
+      PRIMARY KEY("id" AUTOINCREMENT)
+    )`)
+    var stmt = db.prepare(`INSERT INTO settings (id,remember_last_search,remember_last_source,
+          posts_per_page,autocomplete_tags_limit,local_root_path,default_save_path) VALUES (?,?,?,?,?,?,?)`)
+    stmt.run(1,"","gelbooru","100","100","","/uncategorized")
+    stmt.finalize()
+  })
+  db.close()
+}
+
 const axios = require('axios').default
 
 ipc.on("settings:require", (e)=>{
   var settings = null
-  const db = new sqlite3.Database(path.join(__dirname, 'localbooru.db'))
+  const db = new sqlite3.Database(dbfile)
   db.serialize(() => {
     db.get("SELECT * FROM settings LIMIT 1", (err, row)=>{
       if (row)
@@ -120,7 +133,7 @@ ipc.on("settings:require", (e)=>{
 })
 
 ipc.on("settings:edit", (e, column, value) => {
-  const db = new sqlite3.Database(path.join(__dirname, 'localbooru.db'))
+  const db = new sqlite3.Database(dbfile)
   db.serialize(() => {
     db.run(`UPDATE settings SET ${column} = ? WHERE id = 1`, value)
   })
@@ -166,7 +179,7 @@ function galleryRequireGelbooru(e, per_page, page, tags) {
   }).then(function (response) {
     var gallery = response.data
     var images = []
-    const db = new sqlite3.Database(path.join(__dirname, 'localbooru.db'))
+    const db = new sqlite3.Database(dbfile)
     if (gallery.post) {
       gallery.post.forEach(post => {
         post._source = 'gelbooru'
@@ -210,7 +223,7 @@ function galleryRequireDatabase(e, per_page, page, tags) {
   var offset = _page * per_page
   var limit = " " + `LIMIT ${per_page} OFFSET ${offset}`
 
-  const db = new sqlite3.Database(path.join(__dirname, 'localbooru.db'))
+  const db = new sqlite3.Database(dbfile)
   var images = [], gallery = {post:[]}, query = '', sort = null
   db.serialize(() => {
     if (tags.trim()) {
@@ -360,7 +373,7 @@ ipc.on("favorites:store", (e, post_id) => {
     }
   }).then(function (response) {
     const post = response.data.post[0]
-    var db = new sqlite3.Database(path.join(__dirname, 'localbooru.db'))
+    var db = new sqlite3.Database(dbfile)
     var stored = null
 
     db.get("SELECT * FROM settings WHERE id = 1", (err, row)=>{
@@ -411,7 +424,7 @@ ipc.on("post:require", (e, post_id) => {
     }
   }).then(function (response) {
     const gelbooru_post = response.data.post[0]
-    var db = new sqlite3.Database(path.join(__dirname, 'localbooru.db'))
+    var db = new sqlite3.Database(dbfile)
     var localbooru_post = null
     db.get("SELECT * FROM posts WHERE post_id = ?", post_id, (err, row)=>{
       localbooru_post = row
@@ -439,7 +452,7 @@ ipc.on("post:edit", (e, post_id, custom_tags, local_directory, favorite) => {
     }
   }).then(function (response) {
     const post = response.data.post[0]
-    var db = new sqlite3.Database(path.join(__dirname, 'localbooru.db'))
+    var db = new sqlite3.Database(dbfile)
     
     custom_tags = custom_tags.trim().split(/\s+/).map(tag => tag.replace(/^_/, "")).join(' ')
     db.serialize(() => {
@@ -506,7 +519,7 @@ ipc.on("tags:organize", (e, tags, custom_tags=null) => {
     _tags.sort((a,b) => (a.name > b.name) ? 1 : ((b.name > a.name) ? -1 : 0))
     var _custom_tags = []
 
-    var db = new sqlite3.Database(path.join(__dirname, 'localbooru.db'))
+    var db = new sqlite3.Database(dbfile)
     db.serialize(() => {
       if (custom_tags != null) {
         custom_tags.trim().split(/\s+/).forEach(tag => {
@@ -539,7 +552,7 @@ ipc.on("tags:organize", (e, tags, custom_tags=null) => {
 
 ipc.on("folders:require", e => {
   var folders = []
-  var db = new sqlite3.Database(path.join(__dirname, 'localbooru.db'))
+  var db = new sqlite3.Database(dbfile)
   db.serialize(() => {
     db.each("SELECT DISTINCT(local_directory) as folder FROM posts WHERE favorite=1", (err, row)=>{
       folders.push(row.folder)
@@ -551,7 +564,7 @@ ipc.on("folders:require", e => {
 })
 
 ipc.on("custom-tags:reload", (e, custom_tags) => {
-  var db = new sqlite3.Database(path.join(__dirname, 'localbooru.db'))
+  var db = new sqlite3.Database(dbfile)
   db.close(function () {
     e.sender.send("custom-tags:updated")
   })
@@ -578,7 +591,7 @@ iqdb.default(buffer, {
     id: 'www',
     services: ['danbooru', 'konachan', 'yandere', 'gelbooru', 'sankaku', 'e-shuushuu', 'zerochan', 'anime-pictures']
   }
-}).then(a=>{console.log(a)})
+}).then(a=>{console.log('')})
 .catch(err => { console.log(err) })
 
 /*
