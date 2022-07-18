@@ -875,11 +875,11 @@
       function galleryDefaultView(e, gallery, images) {
         $('.gallery').html('')
 
-        if (gallery["@attributes"].count > 0)
+        if (typeof gallery == 'object' && gallery["@attributes"].count > 0)
           $.each(gallery.post, function( index, value ) {
             $('.gallery').append(buildPost(value))
           })
-        else $('.gallery').html(buildEmptyGallery())
+        else $('.gallery').html(buildGalleryErrorMessage(gallery))
 
         mainTagsReload(gallery.post, ipc)
 
@@ -922,13 +922,13 @@
           ipc.once("settings:updated", (e) => {})
 
           ipc.send("gallery:require", null, tags, source, settings)
-          ipc.once("gallery:view", (e, gallery, images) => {
+          ipc.once("gallery:view", (e, gallery, images) => { debug = gallery
             $('.gallery').html('')
-            if (gallery["@attributes"].count > 0)
+            if (typeof gallery == 'object' && gallery["@attributes"].count > 0)
               $.each(gallery.post, function( index, value ) {
                 $('.gallery').append(buildPost(value))
               })
-            else $('.gallery').html(buildEmptyGallery())
+            else $('.gallery').html(buildGalleryErrorMessage(gallery))
             mainTagsReload(gallery.post, ipc)
 
             $('.gallery').append(buildPagination(gallery))
@@ -1407,13 +1407,20 @@ function buildPost(post) {
           </div>`
 }
 
-function buildEmptyGallery() {
+function buildGalleryErrorMessage(gallery) {
   var banners = [
     'images/cd4Y1C1g.jpg',
     'images/i-cant-understand-what-my-husband-is-saying-danna-ga-nani-o-itteiru-ka-wakaranai-ken-kaoru-hajime.jpg',
   ]
   var banner = banners[generateRandom(0, banners.length-1)]
-  return `<div class="animate-box empty fadeInUp animated"><div>No ha sido encontrado ningún post que coincida con el criterio de búsqueda.</div><img src="${banner}"></div>`
+  var errorMessage = 'No ha sido encontrado ningún post que coincida con el criterio de búsqueda.'
+  if (typeof(gallery) == 'string') {
+    matches = gallery.match(/success="false" reason="(.+)"/)
+    if (matches.length>=2)
+      errorMessage = matches[1]
+    else errorMessage = 'Unknown error...'
+  }
+  return `<div class="animate-box empty fadeInUp animated"><div>${errorMessage}</div><img src="${banner}"></div>`
 }
 
 // Source:  https://codepen.io/jsnanigans/full/dXAYBJ

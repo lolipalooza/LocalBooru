@@ -9,6 +9,18 @@ var path = require('path')
 const fs = require('fs')
 var dbfile = null
 
+// Credentials to Gelbooru API
+var credentials = null
+if (fs.existsSync( path.join(__dirname, 'gelbooru.json') )) {
+  fs.readFile(path.join(__dirname, 'gelbooru.json'), 'utf8', (err, data) => {
+    if (err) {
+      console.error(err)
+      return
+    }
+    credentials = JSON.parse(data)
+  })
+}
+
 // Initialize db
 if (!fs.existsSync( path.join(__dirname, 'dbroute.dat') )) {
   dbfile = path.join(__dirname, 'localbooru.db')
@@ -175,6 +187,8 @@ function galleryRequireGelbooru(e, per_page, page, tags) {
       limit: per_page,
       pid: page ? page - 1 : 0,
       tags: tags ?? '',
+      api_key: credentials ? credentials.api_key : null,
+      user_id: credentials ? credentials.user_id : null,
     }
   }).then(function (response) {
     var gallery = response.data
@@ -349,6 +363,8 @@ ipc.on("tags:require", (e, tag) => {
       limit: '100',
       orderby: 'count',
       name_pattern: `${tag}%`,
+      api_key: credentials ? credentials.api_key : null,
+      user_id: credentials ? credentials.user_id : null,
     }
   }).then(function (response) {
     const tags = response.data
@@ -370,6 +386,8 @@ ipc.on("favorites:store", (e, post_id) => {
       q: 'index',
       json: 1,
       id: post_id,
+      api_key: credentials ? credentials.api_key : null,
+      user_id: credentials ? credentials.user_id : null,
     }
   }).then(function (response) {
     const post = response.data.post[0]
@@ -421,6 +439,8 @@ ipc.on("post:require", (e, post_id) => {
       q: 'index',
       json: 1,
       id: post_id,
+      api_key: credentials ? credentials.api_key : null,
+      user_id: credentials ? credentials.user_id : null,
     }
   }).then(function (response) {
     const gelbooru_post = response.data.post[0]
@@ -449,6 +469,8 @@ ipc.on("post:edit", (e, post_id, custom_tags, local_directory, favorite) => {
       q: 'index',
       json: 1,
       id: post_id,
+      api_key: credentials ? credentials.api_key : null,
+      user_id: credentials ? credentials.user_id : null,
     }
   }).then(function (response) {
     const post = response.data.post[0]
@@ -513,6 +535,8 @@ ipc.on("tags:organize", (e, tags, custom_tags=null) => {
       json: 1,
       names: tags,
       limit: 1000,
+      api_key: credentials ? credentials.api_key : null,
+      user_id: credentials ? credentials.user_id : null,
     }
   }).then(function (response) {
     var _tags = response.data.tag
@@ -575,6 +599,8 @@ ipc.on("custom-tags:reload", (e, custom_tags) => {
 /*
  * https://npm.io/package/@l2studio/iqdb-api
  */
+
+/*
 var iqdb = require('@l2studio/iqdb-api')
 
 var local_img = 'file:///C:/Users/Admin/Desktop/Untitled/MEGA/LOST.DIR/Nueva%20carpeta%20(2)/Madoka/994c2ad7a14fe6328d8699a3c55a54d9.jpeg'
@@ -593,6 +619,7 @@ iqdb.default(buffer, {
   }
 }).then(a=>{console.log('')})
 .catch(err => { console.log(err) })
+*/
 
 /*
  * Next:

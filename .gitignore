@@ -1,5 +1,6 @@
 /node_modules
 /localbooru-win32-x64
 /sample
+gelbooru.json
 *.zip
 *.db
